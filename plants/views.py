@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.forms import inlineformset_factory
 from .models import *
-from .forms import OrderForm, CreateUserForm, CustomerForm, DocumentForm
+from .forms import OrderForm, CreateUserForm, CustomerForm
 from .filters import OrderFilter
 from .decorators import unauthenticated_user, allowed_users, admin_only
 from django.contrib.auth.forms import UserCreationForm
@@ -10,27 +10,26 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
-from django_backend.custom_storages import MediaStorage
+from django.conf import settings
+from django.core.files.storage import FileSystemStorage
 
 
-
-def handleFileUpload(request):
+def image_upload(request):
     if request.method == 'POST':
-        form = DocumentForm(request.POST, request.FILES)
-        if form.is_valid():
-            newdoc = Document(docfile=request.FILES['docfile'])
-            newdoc.save()
-
-            return redirect("home")
-        else:
-            form = DocumentForm() # An empty form in case there was a problem
-        
-        # Store the files uploaded
-        uploaded_files = Document.objects.all()
-        
-        # Finally, render page with the uploaded documents/form
-        context = {'documents':documents, 'form':form}
-        return render(request, "plants/user.html", context)
+        image_file = request.FILES['image_file']
+        image_type = request.POST['image_type']
+        if settings.USE_S3: # If on the real server use aws
+            upload = Upload(file=image_file)
+            upload.save()
+            image_url = upload.file.url
+        else: # If testing locally, use local disk
+            fs = FileSystemStorage()
+            filename = fs.save(image_file.name, image_file)
+            image_url = fs.url(filename)
+        return render(request, 'user.html', {
+            'image_url': image_url
+        })
+    return render(request, 'user.html')
 
 
 @unauthenticated_user

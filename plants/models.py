@@ -10,8 +10,10 @@ from django.contrib.auth.models import User
 #   - python manage.py migrate
 
 
-class Document(models.Model):
-    folder = models.FileField(upload_to='images')
+class Upload(models.Model):
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    file = models.FileField(upload_to='images')
+
 
 class Customer(models.Model):
     # null = True allows for the fields to be blank without errors

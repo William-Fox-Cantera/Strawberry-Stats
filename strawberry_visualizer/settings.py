@@ -13,11 +13,9 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 import os
 
 # Uses the keys in the secret file on local, uses Heroku enviornment variables in production
-USE_ENV = False
-if os.path.exists('strawberry_visualizer/secret.py'):
+USE_S3 = os.getenv('USE_S3') == 'TRUE'
+if not USE_S3:
     from .secret import *
-else:
-    USE_ENV = True
 
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -28,7 +26,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ['DJANGO_SECRET_KEY'] if USE_ENV else DJANGO_SECRET_KEY
+SECRET_KEY = os.environ['DJANGO_SECRET_KEY'] if USE_S3 else DJANGO_SECRET_KEY
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -132,26 +130,34 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
-if USE_ENV:
+if USE_S3:
     # aws settings
     AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
     AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
     AWS_DEFAULT_ACL = 'public-read'
     AWS_S3_FILE_OVERWRITE = False
-    # S3 Buckets Config
+    # s3 buckets config
     AWS_S3_ADDRESSING_STYLE = "virtual"
     AWS_S3_REGION_NAME = "us-east-2"
     AWS_STORAGE_BUCKET_NAME = 'tric-static-bucket'
+    AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+    # s3 static settings
+    STATIC_LOCATION = 'static'
+    STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{STATIC_LOCATION}/'
     STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    # s3 public media settings
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 else:
+    print("NOT USING")
+    # local storage settings 
     STATIC_URL = '/static/'
     STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+    MEDIA_URL = '/images/'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'static/images')
 
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
-MEDIA_URL = '/images/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'static/images')
+
 
 # STMP Configuration (simple mail transfer protocol)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -159,5 +165,5 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'wfcantera@gmail.com'
-EMAIL_HOST_PASSWORD = os.environ['SMTP_PASSWORD'] if USE_ENV else SMTP_PASSWORD
+EMAIL_HOST_PASSWORD = os.environ['SMTP_PASSWORD'] if USE_S3 else SMTP_PASSWORD
 
