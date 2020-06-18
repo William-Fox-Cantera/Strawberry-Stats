@@ -5,6 +5,13 @@ from django import forms
 from .models import *
 
 
+class DocumentForm(ModelForm):
+    fileUpload = forms.FileField(
+        label='Select a file',
+        help_text='max. 30 megabytes'
+    )
+
+
 class CustomerForm(ModelForm):
     class Meta:
         model = Customer

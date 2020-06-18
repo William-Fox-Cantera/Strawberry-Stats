@@ -13,11 +13,11 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 import os
 
 # Uses the keys in the secret file on local, uses Heroku enviornment variables in production
-use_env = False
+USE_ENV = False
 if os.path.exists('strawberry_visualizer/secret.py'):
     from .secret import *
 else:
-    use_env = True
+    USE_ENV = True
 
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -28,7 +28,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ['DJANGO_SECRET_KEY'] if use_env else DJANGO_SECRET_KEY
+SECRET_KEY = os.environ['DJANGO_SECRET_KEY'] if USE_ENV else DJANGO_SECRET_KEY
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -132,15 +132,25 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
-#STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATIC_URL = '/static/'
+if USE_ENV:
+    # aws settings
+    AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
+    AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
+    AWS_DEFAULT_ACL = 'public-read'
+    AWS_S3_FILE_OVERWRITE = False
+    # S3 Buckets Config
+    AWS_S3_ADDRESSING_STYLE = "virtual"
+    AWS_S3_REGION_NAME = "us-east-2"
+    AWS_STORAGE_BUCKET_NAME = 'tric-static-bucket'
+    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+else:
+    STATIC_URL = '/static/'
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
 MEDIA_URL = '/images/'
-
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static')
-]
-
 MEDIA_ROOT = os.path.join(BASE_DIR, 'static/images')
 
 # STMP Configuration (simple mail transfer protocol)
@@ -149,17 +159,5 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'wfcantera@gmail.com'
-EMAIL_HOST_PASSWORD = os.environ['SMTP_PASSWORD'] if use_env else SMTP_PASSWORD
+EMAIL_HOST_PASSWORD = os.environ['SMTP_PASSWORD'] if USE_ENV else SMTP_PASSWORD
 
-
-# S3 Buckets Config
-AWS_S3_ADDRESSING_STYLE = "virtual"
-AWS_S3_REGION_NAME = "us-east-2"
-AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID'] if use_env else AWS_ACCESS_KEY_ID
-AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY'] if use_env else AWS_SECRET_ACCESS_KEY
-AWS_STORAGE_BUCKET_NAME = 'tric-static-bucket'
-
-AWS_S3_FILE_OVERWRITE = False
-AWS_DEFAULT_ACL = None
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'

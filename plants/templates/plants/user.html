@@ -1,20 +1,17 @@
 {%  extends 'plants/main.html' %}
+{% load static %}
 {% block content %}
 {% include 'plants/status.html' %}
 
-
 <style>
 	.form-horizontal {
-		right: 50%;
+		margin-left: 40%;
+        width: 100%;
+        display: inline-block;
+        margin-top: 250px;
 	}
 </style>
-<link rel="stylesheet" type="text/css" href="css/file-upload.css" />
-<script src="js/file-upload.js"></script>
-<script type="text/javascript">
-    $(document).ready(function() {
-        $('.file-upload').file_upload();
-    });
-</script>
+
 <form class="form-horizontal">
     <div class="form-group">
         <div class="col-sm-offset-2 col-sm-10">
@@ -24,5 +21,28 @@
         </div>
     </div>
 </form>
+
+
+{% if documents %}
+        <ul>
+        {% for document in documents %}
+            <li><a href="{{ document.docfile.url }}">{{ document.docfile.name }}</a></li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No documents.</p>
+    {% endif %}
+
+        <!-- Upload form. Note enctype attribute! -->
+        <form action="{% url 'handle_file_upload' %}" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <p>{{ form.non_field_errors }}</p>
+            <p>{{ form.docfile.label_tag }} {{ form.docfile.help_text }}</p>
+            <p>
+                {{ form.docfile.errors }}
+                {{ form.docfile }}
+            </p>
+            <p><input type="submit" value="Upload" /></p>
+        </form>
 
 {% endblock content %}

@@ -10,6 +10,9 @@ from django.contrib.auth.models import User
 #   - python manage.py migrate
 
 
+class Document(models.Model):
+    folder = models.FileField(upload_to='images')
+
 class Customer(models.Model):
     # null = True allows for the fields to be blank without errors
     user = models.OneToOneField(User, null=True, blank=True, on_delete=models.CASCADE)
