@@ -1,25 +1,82 @@
-{%  extends 'plants/main.html' %}
+{% extends 'plants/main.html' %}
 {% load static %}
 {% block content %}
 {% include 'plants/status.html' %}
 
 <style>
-	.form-horizontal {
-		margin-left: 40%;
-        width: 100%;
+    .instructions {
+        text-align: center;
+        font-size: 24px;
+        font-family: fantasy;
+    }
+    .button {
+        margin: 0;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        -ms-transform: translate(-50%, -50%);
+        transform: translate(-50%, -50%);
         display: inline-block;
-        margin-top: 250px;
-	}
+        border-radius: 4px;
+        background-color: #f4511e;
+        border: none;
+        color: #FFFFFF;
+        text-align: center;
+        font-size: 28px;
+        padding: 20px;
+        width: 200px;
+        transition: all 0.5s;
+        cursor: pointer;
+        margin: 5px;
+    }
+
+    .button span {
+        cursor: pointer;
+        display: inline-block;
+        position: relative;
+        transition: 0.5s;
+    }
+
+    .button span:after {
+        content: '\00bb';
+        position: absolute;
+        opacity: 0;
+        top: 0;
+        right: -20px;
+        transition: 0.5s;
+    }
+
+    .button:hover span {
+        padding-right: 25px;
+    }
+
+    .button:hover span:after {
+        opacity: 1;
+        right: 0;
+    }
 </style>
 
-<form class="form-horizontal" action="{% url 'image_upload' %}" method="post" enctype="multipart/form-data">
-    <div class="form-group">
-        <div class="col-sm-offset-2 col-sm-10">
-            <label class="file-upload btn btn-primary">
-                Browse <input type="file" />
-            </label>
-        </div>
+<div class="instructions">
+    <p>
+        Welcome to the site, press the button below to get started!
+    </p>
+</div>
+
+{% if should_generate %}
+<div class="col-md-9">
+    <div class="card card-body">
+        <form method="POST" action="" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{form.as_p}}
+            <input class="btn btn-primary" type="submit" name="Update Information">
+        </form>
     </div>
-</form>
+</div>
+
+{% else %}
+<div>
+    <a class="button" href="{% url 'csv_upload' %}" style="vertical-align:middle"><span>Start</span></a>
+</div>
+{% endif %}
 
 {% endblock content %}

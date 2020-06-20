@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
-
+from plants.storage_backends import PublicMediaStorage, PrivateMediaStorage
+from .helpers import get_file_path
 
 # Create your models here.
 
@@ -10,9 +11,20 @@ from django.contrib.auth.models import User
 #   - python manage.py migrate
 
 
+"""
+CLASS - Upload, sets up a date and file field for public media storage
+"""
 class Upload(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
-    file = models.FileField(upload_to='images')
+    file = models.FileField(storage=PublicMediaStorage())
+
+
+"""
+CLASS - UploadPrivate, sets up a date and file field for private media storage
+"""
+class UploadPrivate(models.Model):
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    file = models.FileField(storage=PrivateMediaStorage())
 
 
 class Customer(models.Model):
@@ -23,6 +35,12 @@ class Customer(models.Model):
     email = models.CharField(max_length=200, null=True)
     profile_pic = models.ImageField(default="default_pic.jpg", null=True, blank=True)
     date_created = models.DateTimeField(auto_now_add=True, null=True)
+    user_file_upload = models.FileField(
+        upload_to=get_file_path, 
+        storage=PrivateMediaStorage(), 
+        null=True, 
+        blank=True
+    )
 
     """
     __str__: Method to enumerate the class, especially in the database.

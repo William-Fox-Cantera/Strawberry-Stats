@@ -16,7 +16,7 @@ urlpatterns = [
     path('customer/<str:pk>/', views.customer, name="customer"),
     
     # File Upload
-    path('image_upload', views.image_upload, name="image_upload"),
+    path('csv_upload/', views.csv_upload, name="csv_upload"),
 
     # CRUD
     path('create_order/<str:pk>/', views.createOrder, name="create_order"),

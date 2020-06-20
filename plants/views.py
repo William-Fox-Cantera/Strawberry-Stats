@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.forms import inlineformset_factory
 from .models import *
-from .forms import OrderForm, CreateUserForm, CustomerForm
+from .forms import OrderForm, CreateUserForm, CustomerForm, CustomerFileUploadForm
 from .filters import OrderFilter
 from .decorators import unauthenticated_user, allowed_users, admin_only
 from django.contrib.auth.forms import UserCreationForm
@@ -14,22 +14,21 @@ from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 
 
-def image_upload(request):
+def csv_upload(request):
+    print("HERE")
+    customer = request.user.customer
+    form = CustomerFileUploadForm(instance=customer)
+
     if request.method == 'POST':
-        image_file = request.FILES['image_file']
-        image_type = request.POST['image_type']
-        if settings.USE_S3: # If on the real server use aws
-            upload = Upload(file=image_file)
-            upload.save()
-            image_url = upload.file.url
-        else: # If testing locally, use local disk
-            fs = FileSystemStorage()
-            filename = fs.save(image_file.name, image_file)
-            image_url = fs.url(filename)
-        return render(request, 'user.html', {
-            'image_url': image_url
-        })
-    return render(request, 'user.html')
+        form = CustomerFileUploadForm(request.POST, request.FILES, instance=customer)
+        if form.is_valid():
+            upload = form.save()
+    else: # If not a post, make a blank form 
+        form = CustomerFileUploadForm()
+
+    should_generate = True
+    context = {'form':form, 'should_generate':should_generate}
+    return render(request, 'plants/user.html', context)
 
 
 @unauthenticated_user
@@ -45,7 +44,7 @@ def registerPage(request):
 
             messages.success(request, 'Account successfully created for: ' + username)
             
-            return redirect('login') # Send user to login if they jsut made an account
+            return redirect('login') # Send user to login if they just made an account
 
     context = {'form':form}
     return render(request, "plants/register.html", context)

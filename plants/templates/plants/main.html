@@ -8,9 +8,11 @@
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" 
         integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
    
-        <link rel="stylesheet" type="text/css" href="{% static '/css/main.css' %}">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/main.css' %}">
         <!-- Link for social media icon library-->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+        <!-- Button color css -->
+        <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
     </head>
     <body>
         {% include 'plants/navbar.html' %}
@@ -22,7 +24,7 @@
         {% endblock %}
 
         <hr>
-        {% include 'plants/footer.html' %}}
+        {% include 'plants/footer.html' %}
     </body>
 
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
