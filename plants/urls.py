@@ -10,9 +10,9 @@ urlpatterns = [
 
     # Dashboard
     path('', views.home, name="home"),
-    path('user/', views.userPage, name="user-page"),
     path('account/', views.accountSettings, name="account"),
     path('products', views.products, name="products"),
+    path('user-page/', views.user_page, name="user-page"),
     path('customer/<str:pk>/', views.customer, name="customer"),
     
     # File Upload

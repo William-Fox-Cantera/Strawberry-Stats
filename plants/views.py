@@ -14,21 +14,43 @@ from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 
 
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['customer'])
+def delete_profile_pic(request):
+    pass
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['customer'])
 def csv_upload(request):
-    print("HERE")
+    date_captured = "6/16/2020"
+    total_plants = 100
+    percent_flowered = "60%"
     customer = request.user.customer
     form = CustomerFileUploadForm(instance=customer)
 
     if request.method == 'POST':
         form = CustomerFileUploadForm(request.POST, request.FILES, instance=customer)
         if form.is_valid():
+            print(form.auto_id)
             upload = form.save()
     else: # If not a post, make a blank form 
         form = CustomerFileUploadForm()
 
     should_generate = True
-    context = {'form':form, 'should_generate':should_generate}
+    context = {'form':form, 'should_generate':should_generate,
+                'total_plants':total_plants, 'date_captured':date_captured,
+                'percent_flowered':percent_flowered}
     return render(request, 'plants/user.html', context)
+
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['customer'])
+def user_page(request):
+    should_generate = False
+    context = { 'should_generate':should_generate }
+    return render(request, 'plants/user.html', context)
+
 
 
 @unauthenticated_user
@@ -90,25 +112,6 @@ def home(request):
     'pending':pending }
     
     return render(request, "plants/dashboard.html", context)
-
-
-@login_required(login_url='login')
-@allowed_users(allowed_roles=['customer'])
-def userPage(request):
-    '''
-    orders = request.user.customer.order_set.all()
-    total_orders = orders.count()
-    delivered = orders.filter(status='Delivered').count() # Filter for orders trhat are delivered
-    pending = orders.filter(status='Pending').count()
-    '''
-    date_captured = "6/16/2020"
-    total_plants = 100
-    percent_flowered = "60%"
-
-    context = { 'date_captured': date_captured, 'total_plants': total_plants, 
-    'percent_flowered': percent_flowered }
-
-    return render(request, 'plants/user.html', context)
 
 
 @login_required(login_url='login')

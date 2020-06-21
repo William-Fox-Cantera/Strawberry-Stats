@@ -54,16 +54,33 @@
         opacity: 1;
         right: 0;
     }
+
+    .submit-box {
+        width: 500px;
+        margin: 0;
+        position: absolute;
+        top: 50%;
+        left: 49%;
+        -ms-transform: translate(-50%, -50%);
+        transform: translate(-50%, -50%);
+    }
+
+    .card-body {
+        width: 500px;
+    }
+
+    .view-button {
+        top: 70%;
+    }
 </style>
 
-<div class="instructions">
-    <p>
-        Welcome to the site, press the button below to get started!
+{% if should_generate %} <!-- Renders the file upload once the start button is pressed -->
+<div>
+    <p class="instructions">
+        Upload your csv file, hit submit, then press the view button
     </p>
 </div>
-
-{% if should_generate %}
-<div class="col-md-9">
+<div class="submit-box col-md-9">
     <div class="card card-body">
         <form method="POST" action="" enctype="multipart/form-data">
             {% csrf_token %}
@@ -72,8 +89,15 @@
         </form>
     </div>
 </div>
-
-{% else %}
+<div>
+    <a class="view-button button" href="{% url 'csv_upload' %}" style="vertical-align:middle"><span>view</span></a>
+</div>
+{% else %} <!-- Button to start the process -->
+<div class="instructions">
+    <p>
+        Welcome to the site, press the button below to get started!
+    </p>
+</div>
 <div>
     <a class="button" href="{% url 'csv_upload' %}" style="vertical-align:middle"><span>Start</span></a>
 </div>
