@@ -25,9 +25,11 @@ csv_upload, this function renders the user page for uploading a csv file into th
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['customer'])
 def csv_upload(request, has_started="False"):
+    '''
     user = Customer.objects.get(name="Sam2")
     files = user.user_file_upload
     print(files.read())
+    '''
     customer = request.user.customer
     form = CustomerFileUploadForm(instance=customer)
     if has_started == "False": # Just render the form if the start button is pressed
