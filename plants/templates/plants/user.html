@@ -55,7 +55,22 @@
         right: 0;
     }
 
+    .card-body {
+        width: 500px;
+    }
+
+    .view-button {
+        top: 70%;
+    }
+
+    .messages {
+        background-color: rgb(73, 68, 68);
+        color: #FFFFFF;
+        margin-top: 15px;
+    }
+
     .submit-box {
+        display: inline-block;
         width: 500px;
         margin: 0;
         position: absolute;
@@ -65,12 +80,14 @@
         transform: translate(-50%, -50%);
     }
 
-    .card-body {
-        width: 500px;
-    }
-
-    .view-button {
-        top: 70%;
+    .uploaded-box {
+        width: 200px;
+        margin: 0;
+        position: absolute;
+        top: 50%;
+        left: 73%;
+        -ms-transform: translate(-50%, -50%);
+        transform: translate(-50%, -50%);
     }
 </style>
 
@@ -82,15 +99,24 @@
 </div>
 <div class="submit-box col-md-9">
     <div class="card card-body">
-        <form method="POST" action="" enctype="multipart/form-data">
+        <form method="POST" action="{% url 'csv_upload' True %}" enctype="multipart/form-data">
             {% csrf_token %}
             {{form.as_p}}
-            <input class="btn btn-primary" type="submit" name="Update Information">
+            <input class="btn btn-primary"  type="submit" name="Update Information">
+            <br>
+            <!-- Django error message displayer -->
+            {% if messages %}
+                <ul class="messages">
+                    {% for message in messages %}
+                    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
         </form>
     </div>
 </div>
 <div>
-    <a class="view-button button" href="{% url 'csv_upload' %}" style="vertical-align:middle"><span>view</span></a>
+    <a class="view-button button" href="{% url 'csv_upload' True %}" style="vertical-align:middle"><span>view</span></a>
 </div>
 {% else %} <!-- Button to start the process -->
 <div class="instructions">
@@ -99,7 +125,7 @@
     </p>
 </div>
 <div>
-    <a class="button" href="{% url 'csv_upload' %}" style="vertical-align:middle"><span>Start</span></a>
+    <a class="button" href="{% url 'csv_upload' False %}" style="vertical-align:middle"><span>Start</span></a>
 </div>
 {% endif %}
 

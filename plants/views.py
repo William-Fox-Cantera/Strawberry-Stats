@@ -14,36 +14,51 @@ from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 
 
+"""
+csv_upload, this function renders the user page for uploading a csv file into the database.
+            If the has_started boolean is false, it just displays a start button to get 
+            the user, started. Otherwise it displays the form for submitting the files.
+
+:param request: the html request from the template user.html
+:param has_started: boolean, true if the start button has been pressed yet
+"""
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['customer'])
-def delete_profile_pic(request):
-    pass
-
-
-@login_required(login_url='login')
-@allowed_users(allowed_roles=['customer'])
-def csv_upload(request):
-    date_captured = "6/16/2020"
-    total_plants = 100
-    percent_flowered = "60%"
+def csv_upload(request, has_started="False"):
+    user = Customer.objects.get(name="Sam2")
+    files = user.user_file_upload
+    print(files.read())
     customer = request.user.customer
     form = CustomerFileUploadForm(instance=customer)
+    if has_started == "False": # Just render the form if the start button is pressed
+        return render(request, "plants/user.html", {'form':form, 'should_generate':True})
+    else:
+        if request.method == 'POST':
+            form = CustomerFileUploadForm(request.POST, request.FILES, instance=customer)
+            name = ""
+            for filename, file in request.FILES.items():
+                name = request.FILES[filename].name
 
-    if request.method == 'POST':
-        form = CustomerFileUploadForm(request.POST, request.FILES, instance=customer)
-        if form.is_valid():
-            print(form.auto_id)
-            upload = form.save()
-    else: # If not a post, make a blank form 
-        form = CustomerFileUploadForm()
+            if form.is_valid() and name.endswith(".csv"):
+                messages.success(request, name + " Successfully Uploaded")
+                upload = form.save()
+                return render(request, 'plants/user.html', {'form':form, 'should_generate':True})
+            else:
+                messages.error(request, "Please upload a file ending with \".csv\"")
+        else: # If not a post, make a blank form 
+            form = CustomerFileUploadForm()
 
-    should_generate = True
-    context = {'form':form, 'should_generate':should_generate,
-                'total_plants':total_plants, 'date_captured':date_captured,
-                'percent_flowered':percent_flowered}
-    return render(request, 'plants/user.html', context)
+        context = {'form':form, 'should_generate':True,
+                    'total_plants':100, 'date_captured':"6/16/2020",
+                    'percent_flowered':"60%"}
+        return render(request, 'plants/user.html', context)
 
 
+"""
+user_page, simple method for rendering the home page for the user.
+
+:param request: the html request from teh template
+"""
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['customer'])
 def user_page(request):

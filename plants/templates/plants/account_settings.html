@@ -19,7 +19,12 @@
 			<hr>
 			<h3 style="text-align: center">Account Settings</h3>
 			<hr>
-			<img class="profile-pic" src="{{request.user.customer.profile_pic.url}}">
+			<img class="profile-pic" src="  {% if request.user.customer.profile_pic %}
+												{{request.user.customer.profile_pic.url}}
+											{% else %}
+												https://tric-static-bucket.s3.us-east-2.amazonaws.com/static/images/default_pic.jpg
+											{% endif %}
+										">
 		</div>
 	</div>
 	<div class="col-md-9">

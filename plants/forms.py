@@ -19,7 +19,7 @@ class CustomerFileUploadForm(ModelForm):
     class Meta:
         model = Customer
         fields = ('user_file_upload',)
-
+        
 
 class OrderForm(ModelForm):
     class Meta: # Minimum two fields

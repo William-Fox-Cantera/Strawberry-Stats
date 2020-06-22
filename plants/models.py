@@ -17,8 +17,7 @@ class Customer(models.Model):
     name = models.CharField(max_length=200, null=True) 
     phone = models.CharField(max_length=200, null=True)
     email = models.CharField(max_length=200, null=True)
-    profile_pic = models.ImageField(default="static/images/default_pic.jpg", 
-                                    upload_to=get_profile_pic_path,
+    profile_pic = models.ImageField(upload_to=get_profile_pic_path,
                                     storage=PublicMediaStorage(),
                                     null=True, 
                                     blank=True)

@@ -11,9 +11,11 @@ get_file_path, gets the pathname of the file to be stored int he users private m
 :param filename: the name of the file
 """
 def get_csv_path(instance, filename):
-    now = datetime.now()
-    return '{0}/csv_uploads/{1}/{2}'.format(instance.user.username, now.strftime("%Y/%m/%d %H:%M:%S"), filename)
-
+    #now = datetime.now()
+    #return '{0}/csv_uploads/{1}/{2}'.format(instance.user.username, now.strftime("%Y/%m/%d %H:%M:%S"), filename)
+    name = instance.user.customer.user_file_upload.name
+    print(name)
+    return name
 
 """
 get_profile_pic_path, makes a path to store user profile picture.
