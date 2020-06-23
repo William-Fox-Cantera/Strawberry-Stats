@@ -1,0 +1,113 @@
+{% extends 'plants/main.html' %}
+{% load static %}
+{% block content %}
+{% include 'plants/status.html' %}
+
+<style>
+    .instructions {
+        text-align: center;
+        font-size: 24px;
+        font-family: fantasy;
+    }
+    .button {
+        margin: 0;
+        position: absolute;
+        top: 33%;
+        left: 5.8%;
+        -ms-transform: translate(-50%, -50%);
+        transform: translate(-50%, -50%);
+        display: inline-block;
+        border-radius: 4px;
+        background-color: #f4511e;
+        border: none;
+        color: #FFFFFF;
+        text-align: center;
+        font-size: 28px;
+        padding: 20px;
+        width: 200px;
+        transition: all 0.5s;
+        cursor: pointer;
+        margin: 5px;
+    }
+
+    .button span {
+        cursor: pointer;
+        display: inline-block;
+        position: relative;
+        transition: 0.5s;
+    }
+
+    .button span:after {
+        content: '\00bb';
+        position: absolute;
+        opacity: 0;
+        top: 0;
+        right: -20px;
+        transition: 0.5s;
+    }
+
+    .button:hover span {
+        padding-right: 25px;
+    }
+
+    .button:hover span:after {
+        opacity: 1;
+        right: 0;
+    }
+
+    .card-body {
+        width: 500px;
+    }
+
+    .view-button {
+        top: 70%;
+    }
+</style>
+
+<script>
+    window.onload = function () {
+    
+    var chart = new CanvasJS.Chart("main", {
+        animationEnabled: true,
+        theme: "light2",
+        title:{
+            text: "Simple Line Chart"
+        },
+        axisY:{
+            includeZero: false
+        },
+        data: [{        
+            type: "line",
+              indexLabelFontSize: 16,
+            dataPoints: [
+                { y: 450 },
+                { y: 414},
+                { y: 520, indexLabel: "\u2191 highest",markerColor: "red", markerType: "triangle" },
+                { y: 460 },
+                { y: 450 },
+                { y: 500 },
+                { y: 480 },
+                { y: 480 },
+                { y: 410 , indexLabel: "\u2193 lowest",markerColor: "DarkSlateGrey", markerType: "cross" },
+                { y: 500 },
+                { y: 480 },
+                { y: 510 }
+            ]
+        }]
+    });
+    chart.render();
+    
+    }
+</script>
+
+<div>
+    <a class="button" href="{% url 'csv_upload' False %}" style="vertical-align:middle"><span>Back</span></a>
+</div>
+
+<div id="main"
+     style="margin: 0; position: absolute; top: 50%; left: 50%; -ms-transform: translate(-50%, -50%); transform: translate(-50%, -50%);
+            width:800px; height:600px; background-color: tan;">
+    
+    </div> 
+
+{% endblock content %}

@@ -15,6 +15,17 @@ from django.core.files.storage import FileSystemStorage
 
 
 """
+farm_view, this function renders the view for the "farm" in which the data is displayed.
+
+:param request: the html request from the template farmville.html
+"""
+def farm_view(request):
+    context = {  }
+    return render(request, "plants/farmville.html", context)
+
+
+
+"""
 csv_upload, this function renders the user page for uploading a csv file into the database.
             If the has_started boolean is false, it just displays a start button to get 
             the user, started. Otherwise it displays the form for submitting the files.
