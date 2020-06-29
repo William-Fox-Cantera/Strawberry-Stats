@@ -116,7 +116,7 @@
     </div>
 </div>
 <div>
-    <a class="view-button button" href="{% url 'farm_view' %}" style="vertical-align:middle"><span>view</span></a>
+    <a class="view-button button" href="{% url 'farm_view' customer.id %}" style="vertical-align:middle"><span>view</span></a>
 </div>
 {% else %} <!-- Button to start the process -->
 <div class="instructions">

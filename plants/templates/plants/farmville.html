@@ -4,14 +4,9 @@
 {% include 'plants/status.html' %}
 
 <style>
-    .instructions {
-        text-align: center;
-        font-size: 24px;
-        font-family: fantasy;
-    }
     .button {
         margin: 0;
-        position: absolute;
+        position: fixed;
         top: 33%;
         left: 5.8%;
         -ms-transform: translate(-50%, -50%);
@@ -63,13 +58,10 @@
         top: 70%;
     }
 
-    .instructions {
-        font-family: fantasy;
-        font-size: 24px;
-        margin: 0;
-        position: absolute;
-        top: 40%;
-        left: 0%;
+    .instruction-box {
+        position: fixed;
+        left: .9%;
+        margin-top: 6%;
     }
 </style>
 
@@ -77,32 +69,45 @@
     <a class="button" href="{% url 'csv_upload' False %}" style="vertical-align:middle"><span>Back</span></a>
 </div>
 
-<div>
-    <p class="instructions">
-        Here is a map, the field is highlighted<br>
-        you can zoom in, pan around, and hover<br>
-        over the datapoints to find out more<br>
-        about that plant. <br>
-    </p>
+<div class="instruction-box card" style="width: 20rem;">
+    <div class="card-body" style="width: 400px">
+      <h5 class="card-title" style="font-family: fantasy; font-size: 28px;">What Am I Looking At?</h5>
+      <p class="card-text" style="font-size: 22px; max-width: 70%;">Here is a map displaying your field. Try panning around
+                           and zooming in with the scroll wheel or buttons provided to get
+                           a better look. Hover over the circles with your cursor to see
+                           more information about that plant. 
+      </p>
+    </div>
 </div>
 
 <div id="main-div"
-     style="margin: 0; position: absolute; top: 60%; left: 50%; -ms-transform: translate(-50%, -50%); transform: translate(-50%, -50%);">
+     style="margin: 0; position: fixed;  left: 50%; height: 1vh; -ms-transform: translate(-50%, -50%); transform: translate(-50%, -50%);">
 </div> 
 
-<script>    
+<script type="text/javascript">    
 
 var data = [{
     type: "scattermapbox", mode: "markers",
-    lon: [-75.596], lat: [39.1122],
-    marker: { size: 20, color: ["cyan"] }
+    lon: [-75.596, -75.59618853 
+    
+    
+    ], 
+    
+    
+    lat: [39.1122, 39.1121824867
+    
+    
+    ],
+    marker: { 
+        size: 10, 
+        color: ["cyan", "cyan"] }
   }];
 
 var layout = {
   mapbox: {
     style: "dark",
     center: { lon: -75.596, lat: 39.1122 },
-    zoom: 12, layers: [{
+    zoom: 18, layers: [{
         source: {
           type: "FeatureCollection",
           features: [{

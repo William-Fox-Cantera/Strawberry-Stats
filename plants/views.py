@@ -12,6 +12,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
+import json
 
 
 """
@@ -19,8 +20,19 @@ farm_view, this function renders the view for the "farm" in which the data is di
 
 :param request: the html request from the template farmville.html
 """
-def farm_view(request):
-    context = {  }
+def farm_view(request, pk):
+    customer = Customer.objects.get(id=pk)
+    user_upload = customer.user_file_upload
+    csv_file = user_upload.read() # Read only
+    gps_points = open('%s.json' % user_upload.name[:-4], 'w') # Write to
+    csv_decoded = csv_file.decode("utf-8")
+    coords = csv_decoded.split("\n")
+    print(coords)
+    for row in csv_file:
+        json.dump(row, gps_points)
+        gps_points.write("\n")
+
+    context = { 'customer':customer, 'coordinates':gps_points }
     return render(request, "plants/farmville.html", context)
 
 
@@ -36,15 +48,10 @@ csv_upload, this function renders the user page for uploading a csv file into th
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['customer'])
 def csv_upload(request, has_started="False"):
-    '''
-    user = Customer.objects.get(name="Sam2")
-    files = user.user_file_upload
-    print(files.read())
-    '''
     customer = request.user.customer
     form = CustomerFileUploadForm(instance=customer)
     if has_started == "False": # Just render the form if the start button is pressed
-        return render(request, "plants/user.html", {'form':form, 'should_generate':True})
+        return render(request, "plants/user.html", {'form':form, 'should_generate':True, 'customer':customer})
     else:
         if request.method == 'POST':
             form = CustomerFileUploadForm(request.POST, request.FILES, instance=customer)
@@ -55,13 +62,13 @@ def csv_upload(request, has_started="False"):
             if form.is_valid() and name.endswith(".csv"):
                 messages.success(request, name + " Successfully Uploaded")
                 upload = form.save()
-                return render(request, 'plants/user.html', {'form':form, 'should_generate':True})
+                return render(request, 'plants/user.html', {'form':form, 'should_generate':True, 'customer':customer})
             else:
                 messages.error(request, "Please upload a file ending with \".csv\"")
         else: # If not a post, make a blank form 
             form = CustomerFileUploadForm()
 
-        context = {'form':form, 'should_generate':True,
+        context = {'form':form, 'should_generate':True, 'customer':customer,
                     'total_plants':100, 'date_captured':"6/16/2020",
                     'percent_flowered':"60%"}
         return render(request, 'plants/user.html', context)
@@ -175,7 +182,7 @@ def customer(request, pk):
     orders = myFilter.qs
 
     context = {'customer':customer, 'orders':orders, 'order_count':order_count, 
-    'myFilter':myFilter}
+               'myFilter':myFilter}
     return render(request, "plants/customer.html", context)
 
 

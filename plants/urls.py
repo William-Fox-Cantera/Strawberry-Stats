@@ -20,6 +20,7 @@ urlpatterns = [
     path('csv_upload/<str:has_started>/', views.csv_upload, name="csv_upload"),
 
     # FarmVille
+    path('farm_view/<str:pk>/', views.farm_view, name="farm_view"),
     path('farm_view/', views.farm_view, name="farm_view"),
 
     # CRUD
