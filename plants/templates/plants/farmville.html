@@ -63,6 +63,25 @@
         left: .9%;
         margin-top: 6%;
     }
+
+    #map {
+
+        width: 140vh;
+        height: 50vh;
+        margin: 0; 
+        position: fixed;  
+        left: 60vw; 
+        top: 65vh;
+        -ms-transform: translate(-50%, -50%); 
+        transform: translate(-50%, -50%);
+    }
+
+    .marker {
+        width: 200px;
+        height: 200px;
+        background-size: cover;
+        display: block;
+    }
 </style>
 
 <div>
@@ -74,109 +93,89 @@
       <h5 class="card-title" style="font-family: fantasy; font-size: 28px;">What Am I Looking At?</h5>
       <p class="card-text" style="font-size: 22px; max-width: 70%;">Here is a map displaying your field. Try panning around
                            and zooming in with the scroll wheel or buttons provided to get
-                           a better look. Hover over the circles with your cursor to see
-                           more information about that plant. 
+                           a better look. The strawberries represent the plants in your field, try hovering over
+                           them with the cursor to see more information about that plant. 
       </p>
     </div>
 </div>
 
-<div id="main-div"
-     style="margin: 0; position: fixed;  left: 50%; height: 1vh; -ms-transform: translate(-50%, -50%); transform: translate(-50%, -50%);">
-</div> 
+<div id="map"></div> 
 
-<script type="text/javascript">    
+<script type="text/javascript">
+mapboxgl.accessToken = 'pk.eyJ1Ijoid2lsbGlhbWZveCIsImEiOiJja2JzY3V0dTcwMGJ6MnZzYWF2cjRsNXYwIn0.fbOk4CcYFDOMA_nG9JCauA';
 
-var data = [{
-    type: "scattermapbox", mode: "markers",
-    lon: [-75.596, -75.59618853 
-    
-    
-    ], 
-    
-    
-    lat: [39.1122, 39.1121824867
-    
-    
-    ],
-    marker: { 
-        size: 10, 
-        color: ["cyan", "cyan"] }
-  }];
 
-var layout = {
-  mapbox: {
-    style: "dark",
-    center: { lon: -75.596, lat: 39.1122 },
-    zoom: 18, layers: [{
-        source: {
-          type: "FeatureCollection",
-          features: [{
-              type: "Feature",
-              geometry: {
-                type: "MultiPolygon",
-                coordinates: [[[
-                      [-73.606352888, 45.507489991], [-73.606133883, 45.50687600],
-                      [-73.605905904, 45.506773980], [-73.603533905, 45.505698946],
-                      [-73.602475870, 45.506856969], [-73.600031904, 45.505696003],
-                      [-73.599379992, 45.505389066], [-73.599119902, 45.505632008],
-                      [-73.598896977, 45.505514039], [-73.598783894, 45.505617001],
-                      [-73.591308727, 45.516246185], [-73.591380782, 45.516280145],
-                      [-73.596778656, 45.518690062], [-73.602796770, 45.521348046],
-                      [-73.612239983, 45.525564037], [-73.612422919, 45.525642061],
-                      [-73.617229085, 45.527751983], [-73.617279234, 45.527774160],
-                      [-73.617304713, 45.527741334], [-73.617492052, 45.527498362],
-                      [-73.617533258, 45.527512253], [-73.618074188, 45.526759105],
-                      [-73.618271651, 45.526500673], [-73.618446320, 45.526287943],
-                      [-73.618968507, 45.525698560], [-73.619388002, 45.525216750],
-                      [-73.619532966, 45.525064183], [-73.619686662, 45.524889290],
-                      [-73.619787038, 45.524770086], [-73.619925742, 45.524584939],
-                      [-73.619954486, 45.524557690], [-73.620122362, 45.524377961],
-                      [-73.620201713, 45.524298907], [-73.620775593, 45.523650879]
-                    ]]]
-              }
-            }]
-        },
-        type: "fill", below: "water", color: "teal"
-      }]
-  },
-  height: 650, width: 1200
-  
+var coordinates = JSON.parse("{{coordinates}}");
+
+var geojson = {
+    'type': 'FeatureCollection',
+    'features': [
+        
+    ]
 };
 
-var config = {mapboxAccessToken: "pk.eyJ1Ijoid2lsbGlhbWZveCIsImEiOiJja2JzY3V0dTcwMGJ6MnZzYWF2cjRsNXYwIn0.fbOk4CcYFDOMA_nG9JCauA"};
-
-Plotly.newPlot("main-div", data, layout, config);
-
-
-/*
-var data = [{
-        type: "scattermapbox", mode: "markers",
-        lon: [-75.596], lat: [39.1122],
-        marker: { size: 20, color: ["cyan"] }
-    }];
-
-var layout = {
-	dragmode: 'zoom',
-	mapbox: {
-		style: 'white-bg',
-		layers: [
-			{
-            "below": 'traces',
-            "sourcetype": "raster",
-            "source": [
-                "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}"
-            ]
+for (let i = 0; i < coordinates.length; i++) {
+    var feature = {
+            'type': 'Feature',
+            'properties': {
+            'message': 'Hello',
+            'iconSize': [60, 60],
+            'image':'https://tric-static-bucket.s3.us-east-2.amazonaws.com/static/images/sampleBerry.png'
         },
-			{
-             sourcetype: "raster",
-			 source: ["https://geo.weather.gc.ca/geomet/?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&BBOX={bbox-epsg-3857}&CRS=EPSG:3857&WIDTH=1000&HEIGHT=1000&LAYERS=RADAR_1KM_RDBR&TILED=true&FORMAT=image/png"]}],
-		below: 'traces',
-		center: {lat: 39.1122, lon: -75.596}, zoom: 4},
-	margin: {r: 0, t: 0, b: 0, l: 0},
-	showlegend: false};
+        'geometry': {
+            'type': 'Point',
+            'coordinates': [coordinates[i][1], coordinates[i][0]]
+        }
+    }
+    geojson['features'].push(feature);
+}
 
-Plotly.newPlot('main-div', data, layout);
-*/
+
+var map = new mapboxgl.Map({
+container: 'map',
+    style: 'mapbox://styles/mapbox/streets-v11',
+    center: [-75.596, 39.1122],
+    zoom: 15
+});
+
+// add markers to map
+geojson.features.forEach(function(marker) {
+    // create a DOM element for the marker
+    var el = document.createElement('div');
+    el.className = 'marker';
+    el.style.backgroundImage =
+        'url(https://tric-static-bucket.s3.us-east-2.amazonaws.com/static/images/strawberry.png)';
+    el.style.width = '30px';//marker.properties.iconSize[0] + 'px';
+    el.style.height = '30px';//marker.properties.iconSize[1] + 'px';
+
+    // add marker to map
+    new mapboxgl.Marker(el)
+    .setLngLat(marker.geometry.coordinates)
+    .addTo(map);
+
+    // Make popup, not added to map yet
+    var popup = new mapboxgl.Popup({
+        closeButton: false,
+        closeOnClick: false
+    })
+    .setLngLat(marker.geometry.coordinates)
+    //.setPopup(new mapboxgl.Popup({ offset: 25 }) // add popups
+    .setHTML('<p><img src="' + marker.properties.image + '" style="min-height: 150; min-width: 150px;"></p>' // Add image to the popup
+            + '<H4 style="background-color: green;">Plant Number: 12</H4>' 
+            + '<H4 style="background-color: red;">Has Flowers? No</H4>'); 
+   
+
+    el.addEventListener('mouseenter', function() {
+        map.getCanvas().style.cursor = 'pointer'; // Change cursor to indicate response
+        popup
+            .addTo(map);
+    });
+
+    el.addEventListener('mouseleave', function() {
+        map.getCanvas().style.cursor = '';
+        popup.remove();
+    });
+});
 </script>
 
 {% endblock content %}
