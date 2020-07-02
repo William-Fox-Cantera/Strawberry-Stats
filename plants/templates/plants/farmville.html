@@ -59,21 +59,25 @@
     }
 
     .instruction-box {
+        border-style: solid;
+        border-width: thick;
+        border-color: #000000;
         position: fixed;
         left: .9%;
+        top: 27.6%;
         margin-top: 6%;
     }
 
     #map {
-
-        width: 140vh;
-        height: 50vh;
+        border-style: solid;
+        border-width: thick;
+        border-color: #000000;
+        width: 80%;
+        height: 60%;
         margin: 0; 
-        position: fixed;  
-        left: 60vw; 
-        top: 65vh;
-        -ms-transform: translate(-50%, -50%); 
-        transform: translate(-50%, -50%);
+        position: absolute;  
+        left: 19.5%; 
+        top: 29%;
     }
 
     .marker {
@@ -91,10 +95,10 @@
 <div class="instruction-box card" style="width: 20rem;">
     <div class="card-body" style="width: 400px">
       <h5 class="card-title" style="font-family: fantasy; font-size: 28px;">What Am I Looking At?</h5>
-      <p class="card-text" style="font-size: 22px; max-width: 70%;">Here is a map displaying your field. Try panning around
-                           and zooming in with the scroll wheel or buttons provided to get
-                           a better look. The strawberries represent the plants in your field, try hovering over
-                           them with the cursor to see more information about that plant. 
+      <p class="card-text" style="font-size: 21px; max-width: 70%;">This is a map displaying your field. Zoom in with the scroll wheel
+                           to get a better view of each strawberry icon. Each of these icons represents an actual 
+                           on the ground location of a plant. Hover over them with the cursor to see more information,
+                           like images, coordinates, and more.
       </p>
     </div>
 </div>
@@ -162,6 +166,8 @@ geojson.features.forEach(function(marker) {
     //.setPopup(new mapboxgl.Popup({ offset: 25 }) // add popups
     .setHTML('<p><img src="' + marker.properties.image + '" style="min-height: 150; min-width: 150px;"></p>' // Add image to the popup
             + '<H4 style="background-color: green;">Plant Number: 12</H4>' 
+            + '<H4 style="font-size: 14px;">Latitude:' + marker.geometry.coordinates[0] + '</H4>'
+            + '<H4 style="font-size: 14px;">Longitude:' + marker.geometry.coordinates[1] + '</H4>'
             + '<H4 style="background-color: red;">Has Flowers? No</H4>'); 
    
 
