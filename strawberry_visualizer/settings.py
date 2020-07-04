@@ -26,7 +26,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ['DJANGO_SECRET_KEY'] if IS_LIVE else DJANGO_SECRET_KEY
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY') if IS_LIVE else DJANGO_SECRET_KEY
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -95,11 +95,11 @@ DATABASES = {
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ['DB_NAME'] if IS_LIVE else DB_NAME,
-        'USER': os.environ['DB_USER'] if IS_LIVE else DB_USER,
-        'PASSWORD': os.environ['DB_PASSWORD'] if IS_LIVE else DB_PASSWORD,
-        'HOST': os.environ['S3_ENDPOINT'] if IS_LIVE else S3_ENDPOINT,
-        'PORT': os.environ['PORT'] if IS_LIVE else PORT
+        'NAME': os.getenv('DB_NAME') if IS_LIVE else DB_NAME,
+        'USER': os.getenv('DB_USER') if IS_LIVE else DB_USER,
+        'PASSWORD': os.getenv('DB_PASSWORD') if IS_LIVE else DB_PASSWORD,
+        'HOST': os.getenv('S3_ENDPOINT') if IS_LIVE else S3_ENDPOINT,
+        'PORT': os.getenv('PORT') if IS_LIVE else PORT
     }
 }
 
@@ -178,5 +178,5 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'wfcantera@gmail.com'
-EMAIL_HOST_PASSWORD = os.environ['SMTP_PASSWORD'] if IS_LIVE else SMTP_PASSWORD
+EMAIL_HOST_PASSWORD = os.getenv('SMTP_PASSWORD') if IS_LIVE else SMTP_PASSWORD
 
