@@ -95,10 +95,10 @@ DATABASES = {
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME') #if IS_LIVE else DB_NAME,
-        'USER': os.getenv('DB_USER') #if IS_LIVE else DB_USER,
-        'PASSWORD': os.getenv('DB_PASSWORD') #if IS_LIVE else DB_PASSWORD,
-        'HOST': os.getenv('S3_ENDPOINT') #if IS_LIVE else S3_ENDPOINT,
+        'NAME': os.getenv('DB_NAME'), #if IS_LIVE else DB_NAME,
+        'USER': os.getenv('DB_USER'), #if IS_LIVE else DB_USER,
+        'PASSWORD': os.getenv('DB_PASSWORD'), #if IS_LIVE else DB_PASSWORD,
+        'HOST': os.getenv('S3_ENDPOINT'), #if IS_LIVE else S3_ENDPOINT,
         'PORT': os.getenv('PORT') #if IS_LIVE else PORT
     }
 }
