@@ -14,8 +14,8 @@ import os
 
 # Uses the keys in the secret file on local, uses Heroku enviornment variables in production
 IS_LIVE = os.getenv('IS_LIVE') == 'TRUE'
-if not IS_LIVE:
-    from .secret import *
+#if not IS_LIVE:
+    #from .secret import *
 
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
