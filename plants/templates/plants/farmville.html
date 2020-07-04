@@ -86,29 +86,123 @@
         background-size: cover;
         display: block;
     }
+
+    .tips {
+        text-decoration: none;
+        color: white;
+        background-color: black;
+        border-radius: 50%;
+        padding: 4px 8px;
+    }
+
+    .tips:hover {
+        background-color: rgb(31, 29, 29);
+    }
+
+    /* Style the tab */
+    .tab {
+        z-index: 1;
+        position: absolute;
+        top: 29.5vh;
+        left: 19.73vw;
+        overflow: hidden;
+        border: 1px solid #ccc;
+        background-color: #f1f1f1;
+    }
+
+    /* Style the buttons that are used to open the tab content */
+    .tab button {
+        background-color: inherit;
+        float: left;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        padding: 14px 16px;
+        transition: 0.3s;
+    }
+
+    /* Change background color of buttons on hover */
+    .tab button:hover {
+        background-color: rgb(95, 91, 91);
+    }
+
+    /* Create an active/current tablink class */
+    .tab button.active {
+        background-color: #ccc;
+    }
+
+    /* Style the tab content */
+    .tabcontent {
+        display: none;
+        padding: 6px 12px;
+        border: 1px solid #ccc;
+        border-top: none;
+    }
 </style>
 
-<div>
-    <a class="button" href="{% url 'csv_upload' False %}" style="vertical-align:middle"><span>Back</span></a>
-</div>
-
-<div class="instruction-box card" style="width: 20rem;">
+<a class="button" href="{% url 'csv_upload' False %}" style="vertical-align:middle"><span>Back</span></a>
+<div class="instruction-box card" style="width: 20rem; min-height: 50%; max-height: 50%">
     <div class="card-body" style="width: 400px">
-      <h5 class="card-title" style="font-family: fantasy; font-size: 28px;">What Am I Looking At?</h5>
-      <p class="card-text" style="font-size: 21px; max-width: 70%;">This is a map displaying your field. Zoom in with the scroll wheel
+      <a href="#" onclick="changeText('previous')" class="tips">&#8249;</a> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+      <h5 class="card-title" style="font-family: fantasy; font-size: 28px; display: inline-block">Tips</h5>       
+      &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<a href="#" onclick="changeText('next')" class="tips">&#8250;</a>
+      <p id="tips-text" style="font-size: 21px; max-width: 70%;">This is a map displaying your field. Zoom in with the scroll wheel
                            to get a better view of each strawberry icon. Each of these icons represents an actual 
                            on the ground location of a plant. Hover over them with the cursor to see more information,
-                           like images, coordinates, and more.
+                           like images, coordinates, and more. 
       </p>
     </div>
 </div>
 
-<div id="map"></div> 
+<div class="tab">
+    <button class="tablinks" onclick="">Map</button>
+    <button class="tablinks" onclick="">Saved Plants</button>
+  </div>
+<div id="map"></div> <!-- The main map -->
 
 <script type="text/javascript">
+var tipIndex = 0;
+var MAX_MESSAGES = 3;
+/*
+* changeText, changes the text of the tips box when next or previous button is pressed
+* 
+* Consumes: buttonType -> string, the next or previous button
+* Produces: Nothing
+*/
+function changeText(buttonType) {
+    let message = "";
+    let temp = tipIndex;
+    tipIndex = buttonType === "next" ? tipIndex+1 : tipIndex-1;
+    if (tipIndex < 0) // Loop to the end
+        tipIndex = MAX_MESSAGES;
+    switch(tipIndex) {
+            case 1:
+                message = "The closer to the ground you zoom in, the more plants you will be able to see. They get\
+                           bigger/smaller based on how far you zoomed in or out.";
+                break;
+            case 2: 
+                message = "Click on a plant you find interesting or want to save for later to save it. To view the plants\
+                           you've saved, click on \"Saved Plants\" button in the top left corner of the map. There you can\
+                           save the favorites you have for later or remove them. Click the map button to return to the map.";
+                break;
+            case 3: 
+                message = "You'll see that certain portions of the field are covered in red, yellow, and green sections.\
+                           This is an analysis of which parts of your field have strawberry plants that are currently\
+                           flowering. Red indicates little to no flowering, yellow for some, and green for many.";
+                break;
+            default:
+                tipIndex = 0;
+                message = "This is a map displaying your field. Zoom in with the scroll wheel\
+                           to get a better view of each strawberry icon. Each of these icons represents an actual\
+                           on the ground location of a plant. Hover over them with the cursor to see more information,\
+                           like images, coordinates, and more. ";
+        }
+        document.getElementById('tips-text').innerHTML = message;
+} 
+
+//-----------------------------------------------------------------------------------------------------------------------------------------
+// MAPBOX STUFF
 mapboxgl.accessToken = 'pk.eyJ1Ijoid2lsbGlhbWZveCIsImEiOiJja2JzY3V0dTcwMGJ6MnZzYWF2cjRsNXYwIn0.fbOk4CcYFDOMA_nG9JCauA';
-
-
 var coordinates = JSON.parse("{{coordinates}}");
 
 var geojson = {
@@ -145,15 +239,16 @@ container: 'map',
 // add markers to map
 geojson.features.forEach(function(marker) {
     // create a DOM element for the marker
-    var el = document.createElement('div');
-    el.className = 'marker';
-    el.style.backgroundImage =
-        'url(https://tric-static-bucket.s3.us-east-2.amazonaws.com/static/images/strawberry.png)';
-    el.style.width = '30px';//marker.properties.iconSize[0] + 'px';
-    el.style.height = '30px';//marker.properties.iconSize[1] + 'px';
+    var berryIcon = document.createElement('div');
+    berryIcon.className = 'marker';
+    berryIcon.style.backgroundImage = 'url(https://tric-static-bucket.s3.us-east-2.amazonaws.com/static/images/strawberry.png)';
+    berryIcon.style.width = '30px';//marker.properties.iconSize[0] + 'px';
+    berryIcon.style.height = '30px';//marker.properties.iconSize[1] + 'px';
+    berryIcon.style.backgroundColor = 'rgba(0,255,0,.1)';
+    berryIcon.style.borderRadius = '5px';
 
     // add marker to map
-    new mapboxgl.Marker(el)
+    new mapboxgl.Marker(berryIcon)
     .setLngLat(marker.geometry.coordinates)
     .addTo(map);
 
@@ -165,19 +260,19 @@ geojson.features.forEach(function(marker) {
     .setLngLat(marker.geometry.coordinates)
     //.setPopup(new mapboxgl.Popup({ offset: 25 }) // add popups
     .setHTML('<p><img src="' + marker.properties.image + '" style="min-height: 150; min-width: 150px;"></p>' // Add image to the popup
-            + '<H4 style="background-color: green;">Plant Number: 12</H4>' 
+            + '<H4>Plant Number: 12</H4>' 
             + '<H4 style="font-size: 14px;">Latitude:' + marker.geometry.coordinates[0] + '</H4>'
             + '<H4 style="font-size: 14px;">Longitude:' + marker.geometry.coordinates[1] + '</H4>'
             + '<H4 style="background-color: red;">Has Flowers? No</H4>'); 
    
 
-    el.addEventListener('mouseenter', function() {
+    berryIcon.addEventListener('mouseenter', function() {
         map.getCanvas().style.cursor = 'pointer'; // Change cursor to indicate response
         popup
             .addTo(map);
     });
 
-    el.addEventListener('mouseleave', function() {
+    berryIcon.addEventListener('mouseleave', function() {
         map.getCanvas().style.cursor = '';
         popup.remove();
     });

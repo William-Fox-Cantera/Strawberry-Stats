@@ -13,8 +13,8 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 import os
 
 # Uses the keys in the secret file on local, uses Heroku enviornment variables in production
-USE_S3 = os.getenv('USE_S3') == 'TRUE'
-if not USE_S3:
+IS_LIVE = os.getenv('IS_LIVE') == 'TRUE'
+if not IS_LIVE:
     from .secret import *
 
 
@@ -26,7 +26,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ['DJANGO_SECRET_KEY'] if USE_S3 else DJANGO_SECRET_KEY
+SECRET_KEY = os.environ['DJANGO_SECRET_KEY'] if IS_LIVE else DJANGO_SECRET_KEY
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -95,11 +95,11 @@ DATABASES = {
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'BERRY_DB',
-        'USER': 'williamcantera',
-        'PASSWORD': 'violaPlayer2!',
-        'HOST': 'database-1.cgy7s7jtjela.us-east-2.rds.amazonaws.com',
-        'PORT': '5432'
+        'NAME': os.environ['DB_NAME'] if IS_LIVE else DB_NAME,
+        'USER': os.environ['DB_USER'] if IS_LIVE else DB_USER,
+        'PASSWORD': os.environ['DB_PASSWORD'] if IS_LIVE else DB_PASSWORD,
+        'HOST': os.environ['S3_ENDPOINT'] if IS_LIVE else S3_ENDPOINT,
+        'PORT': os.environ['PORT'] if IS_LIVE else PORT
     }
 }
 
@@ -178,5 +178,5 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'wfcantera@gmail.com'
-EMAIL_HOST_PASSWORD = os.environ['SMTP_PASSWORD'] if USE_S3 else SMTP_PASSWORD
+EMAIL_HOST_PASSWORD = os.environ['SMTP_PASSWORD'] if IS_LIVE else SMTP_PASSWORD
 
