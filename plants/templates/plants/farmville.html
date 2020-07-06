@@ -80,6 +80,18 @@
         top: 29%;
     }
 
+    #saved {
+        border-style: solid;
+        border-width: thick;
+        border-color: #000000;
+        width: 80%;
+        height: 60%;
+        margin: 0; 
+        position: absolute;  
+        left: 19.5%; 
+        top: 29%;
+    }
+
     .marker {
         width: 200px;
         height: 200px;
@@ -138,6 +150,25 @@
         border: 1px solid #ccc;
         border-top: none;
     }
+
+    #favorites {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        overflow-y: scroll;
+    }
+
+    .save {
+        vertical-align:middle; 
+        transform:translate(138%, 50%); 
+        width: 10vw; 
+        background-color: #f1f1f1;
+    }
+
+    .save:hover {
+        background-color: rgb(95, 91, 91);
+    }
 </style>
 
 <a class="button" href="{% url 'csv_upload' False %}" style="vertical-align:middle"><span>Back</span></a>
@@ -154,15 +185,110 @@
     </div>
 </div>
 
+<div class="tabcontent" id="saved">
+    <a class="button save" onclick="saveLocal()"><span>save</span></a>
+    <ul id="favorites" class="favs"></ul>
+</div>
+
 <div class="tab">
-    <button class="tablinks" onclick="">Map</button>
-    <button class="tablinks" onclick="">Saved Plants</button>
-  </div>
+    <button class="tablinks" onclick="switchTabs(event, 'map')">Map</button>
+    <button class="tablinks" onclick="switchTabs(event, 'saved')">Saved Plants</button>
+</div>
 <div id="map"></div> <!-- The main map -->
+
 
 <script type="text/javascript">
 var tipIndex = 0;
+var favorites = [];
 var MAX_MESSAGES = 3;
+
+function saveLocal() {
+    //localStorage.setItem('plantNum', favorites[0]['plantNum']);
+    console.log(localStorage.getItem('plantNum'));
+}
+
+/*
+* addStyle, adds a string in for style to the html.
+*
+* Consumes: 
+* Produces: 
+*/
+function addStyle(toBeStyled, styleString) {
+    let styleIndex = toBeStyled.indexOf("style");
+    if (styleIndex === -1) {
+        for (let i = 0; i < toBeStyled.length; i++) {
+            if (toBeStyled[i+1] === ">") {
+                toBeStyled = toBeStyled.substring(0, i) + styleString + toBeStyled.substring(i, toBeStyled.length);
+            }
+        }
+    } else {
+
+    }
+    return toBeStyled;
+}
+
+
+/*
+* switchTabs, changes the content on the center of the screen from the MapBox map to 
+*             scene for viewing and saving favorited plants and vice versa.
+*
+* Consumes: tab -> String, the tab to switch to 
+* Produces: Nothing
+*/
+function switchTabs(event, tab) {
+        var map = document.getElementById("map");
+        if (tab === "saved") {
+            map.style.visibility = "hidden"; // Hides the map
+            document.getElementById(tab).style.display = "block";
+            event.currentTarget.className += " active";
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) { // Stop the interactivity for the tab so it doesn't get stuck on dark grey
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            // Loop for displaying the berry icons
+            let imgStyle = " border: 5px solid black; border-radius: 10%; margin-left: 150px; margin-top: 60px; margin-bottom: 200px;  min-height: 170px; min-width: 170px; ";
+            let plantNumStyle = " style=\"margin-left: -11vw; margin-top: 250px;\"";
+            let latStyle = " style=\"margin-left: -8vw; margin-top: 275px;\"";
+            let lonStyle = " style=\"margin-left: -11.3vw; margin-top: 300px;\"";
+            let flowerStyle = " style=\"margin-left: -10.9vw; margin-top: 325px;\"";
+            let favoritesDiv = document.getElementById("favorites");
+            for (var i = 0; i < favorites.length; i++) {
+                let imageHTML = favorites[i]['imageLink'];
+                let styleIndex = imageHTML.indexOf("style");
+                let modifiedHTML = imageHTML.substring(0, styleIndex+7) + imgStyle + "\"></p>";
+                favoritesDiv.innerHTML += modifiedHTML;   
+
+
+                let plantNum = favorites[i]['plantNum'];
+                let modifiedPlantNum = plantNum.substring(0, 3) + plantNumStyle + plantNum.substring(3, plantNum.length);
+                favoritesDiv.innerHTML += modifiedPlantNum; 
+
+                let lat = favorites[i]['latitude'];
+                let latStyleIndex = lat.indexOf("style");
+                let modifiedLat = lat.substring(0, latStyleIndex) + latStyle + lat.substring(28, lat.length);
+                favoritesDiv.innerHTML += modifiedLat;
+
+                let lon = favorites[i]['longitude'];
+                let lonStyleIndex = lon.indexOf("style");
+                let modifiedLon = lon.substring(0, lonStyleIndex) + lonStyle + lon.substring(28, lon.length);
+                favoritesDiv.innerHTML += modifiedLon; 
+    
+                let flowers = favorites[i]['hasFlowers'];
+                let flowerStyleIndex = flowers.indexOf("style");
+                let modifiedFlowers = flowers.substring(0, flowerStyleIndex) + flowerStyle + flowers.substring(34, flowers.length);
+                console.log(modifiedFlowers);
+                favoritesDiv.innerHTML += modifiedFlowers;         
+            }
+        } else {
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            map.style.visibility = "visible";
+        }
+}
+
+
 /*
 * changeText, changes the text of the tips box when next or previous button is pressed
 * 
@@ -177,13 +303,13 @@ function changeText(buttonType) {
         tipIndex = MAX_MESSAGES;
     switch(tipIndex) {
             case 1:
-                message = "The closer to the ground you zoom in, the more plants you will be able to see. They get\
-                           bigger/smaller based on how far you zoomed in or out.";
-                break;
-            case 2: 
                 message = "Click on a plant you find interesting or want to save for later to save it. To view the plants\
                            you've saved, click on \"Saved Plants\" button in the top left corner of the map. There you can\
                            save the favorites you have for later or remove them. Click the map button to return to the map.";
+                break;
+            case 2: 
+                message = "The closer to the ground you zoom in, the more plants you will be able to see. They get\
+                           bigger/smaller based on how far you zoomed in or out.";
                 break;
             case 3: 
                 message = "You'll see that certain portions of the field are covered in red, yellow, and green sections.\
@@ -200,6 +326,29 @@ function changeText(buttonType) {
         document.getElementById('tips-text').innerHTML = message;
 } 
 
+
+/*
+* parseIconHTML, parses the html associated with the strawberry icon hover html.
+* 
+* Consumes: htmlString -> String, the string to be parsed
+* Produces: An array of strings (parsed)
+*/
+function parseIconHTML(htmlString) {
+    let parsedString = "";
+    let parsedArr = [];
+    for (let i = 74; i < htmlString.length; i++) { // 74 because that's where the first <p> tag starts
+        parsedString += htmlString[i];
+            if (htmlString[i] === "<" && htmlString[i+1] === "/" && htmlString[i+6] != null) { // Ignore last </div>
+                while (htmlString[i] != ">") {
+                    i++;
+                    parsedString += htmlString[i];
+                }
+                parsedArr.push(parsedString);
+                parsedString = ""; // Reset
+            }
+        }
+        return parsedArr;
+}
 //-----------------------------------------------------------------------------------------------------------------------------------------
 // MAPBOX STUFF
 mapboxgl.accessToken = 'pk.eyJ1Ijoid2lsbGlhbWZveCIsImEiOiJja2JzY3V0dTcwMGJ6MnZzYWF2cjRsNXYwIn0.fbOk4CcYFDOMA_nG9JCauA';
@@ -266,13 +415,23 @@ geojson.features.forEach(function(marker) {
             + '<H4 style="background-color: red;">Has Flowers? No</H4>'); 
    
 
+    berryIcon.addEventListener('mousedown', function() {
+        let berryHTML = popup.getElement().innerHTML;
+        let arr = parseIconHTML(berryHTML);
+        for (let i = 0; i < arr.length; i++)
+            console.log(arr[i]);
+        favorites.push({'imageLink':arr[0], 'plantNum':arr[1], 'latitude':arr[2], 'longitude':arr[3], 'hasFlowers':arr[4]});
+    });
+
     berryIcon.addEventListener('mouseenter', function() {
+        berryIcon.style.zIndex = "2"; // Bring icon being hovered to front
         map.getCanvas().style.cursor = 'pointer'; // Change cursor to indicate response
         popup
             .addTo(map);
     });
 
     berryIcon.addEventListener('mouseleave', function() {
+        berryIcon.style.zIndex = "1"; // Put it back down
         map.getCanvas().style.cursor = '';
         popup.remove();
     });
