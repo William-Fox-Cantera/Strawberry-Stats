@@ -352,7 +352,9 @@ function parseIconHTML(htmlString) {
 //-----------------------------------------------------------------------------------------------------------------------------------------
 // MAPBOX STUFF
 mapboxgl.accessToken = 'pk.eyJ1Ijoid2lsbGlhbWZveCIsImEiOiJja2JzY3V0dTcwMGJ6MnZzYWF2cjRsNXYwIn0.fbOk4CcYFDOMA_nG9JCauA';
-var coordinates = JSON.parse("{{coordinates}}");
+var meta = JSON.parse("{{meta|safe}}".replace(/'/g,'"'));
+console.log(meta)
+
 
 var geojson = {
     'type': 'FeatureCollection',
@@ -361,17 +363,17 @@ var geojson = {
     ]
 };
 
-for (let i = 0; i < coordinates.length; i++) {
+for (let i = 0; i < meta.length; i++) {
     var feature = {
             'type': 'Feature',
             'properties': {
             'message': 'Hello',
             'iconSize': [60, 60],
-            'image':'https://tric-static-bucket.s3.us-east-2.amazonaws.com/static/images/sampleBerry.png'
+            'image': meta[i]['image']
         },
         'geometry': {
             'type': 'Point',
-            'coordinates': [coordinates[i][1], coordinates[i][0]]
+            'coordinates': [meta[i]['gps_head_lat'], meta[i]['gps_head_lon']]
         }
     }
     geojson['features'].push(feature);
