@@ -99,7 +99,7 @@
 </div>
 <div class="submit-box col-md-9">
     <div class="card card-body">
-        <form method="POST" action="{% url 'csv_upload' True %}" enctype="multipart/form-data">
+        <form method="POST" action="{% url 'csv_upload' 'upload' %}" enctype="multipart/form-data">
             {% csrf_token %}
             {{form.as_p}}
             <input class="btn btn-primary"  type="submit" name="Update Information">
@@ -115,9 +115,7 @@
         </form>
     </div>
 </div>
-<div>
-    <a class="view-button button" href="{% url 'farm_view' customer.id %}" style="vertical-align:middle"><span>view</span></a>
-</div>
+<a class="view-button button" href="{% url 'csv_upload' 'farmville' %}" style="vertical-align:middle"><span>view</span></a>
 {% else %} <!-- Button to start the process -->
 <div class="instructions">
     <p>
@@ -125,7 +123,7 @@
     </p>
 </div>
 <div>
-    <a class="button" href="{% url 'csv_upload' False %}" style="vertical-align:middle"><span>Start</span></a>
+    <a class="button" href="{% url 'csv_upload' %}" style="vertical-align:middle"><span>Start</span></a>
 </div>
 {% endif %}
 

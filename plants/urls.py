@@ -17,11 +17,7 @@ urlpatterns = [
     
     # File Upload
     path('csv_upload/', views.csv_upload, name="csv_upload"),
-    path('csv_upload/<str:has_started>/', views.csv_upload, name="csv_upload"),
-
-    # FarmVille
-    path('farm_view/<str:pk>/', views.farm_view, name="farm_view"),
-    path('farm_view/', views.farm_view, name="farm_view"),
+    path('csv_upload/<str:destination>/', views.csv_upload, name="csv_upload"),
 
     # CRUD
     path('create_order/<str:pk>/', views.createOrder, name="create_order"),

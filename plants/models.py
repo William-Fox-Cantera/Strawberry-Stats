@@ -26,6 +26,7 @@ class Customer(models.Model):
                                         storage=PrivateMediaStorage(), 
                                         null=True, 
                                         blank=True)
+    meta_list = models.TextField(null=True)
 
     """
     __str__: Method to enumerate the class, especially in the database.

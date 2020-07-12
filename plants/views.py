@@ -12,47 +12,12 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
-from .storage_backends import PrivateMediaStorage, PublicMediaStorage
+from .storage_backends import PrivateMediaStorage
 import json
 import piexif
 import piexif.helper
 from zipfile import ZipFile
 from io import BytesIO
-from PIL import Image
-"""
-farm_view, this function renders the view for the "farm" in which the data is displayed.
-
-:param request: the html request from the template farmville.html
-"""
-def farm_view(request, pk):
-    customer = Customer.objects.get(id=pk)
-    user_upload = customer.user_file_upload
-    with ZipFile(user_upload, 'r') as zipfile:
-        zipfile.extractall()
-        meta_list = []
-        i = 0
-        zipfile.printdir()
-        for filename in zipfile.namelist(): 
-            if filename.endswith(".jpg"): # Other files shouldn't be trusted
-                exif_dict = piexif.load("testImages/" + str(i) + '.jpg')
-
-                data = zipfile.read("temp/" + str(i) + '.jpg')
-                dataEnc = BytesIO(data)
-                img = Image.open(dataEnc)
-                print(img)
-                media_storage = PublicMediaStorage()
-                
-                media_storage.save('Sam/hi.jpg', dataEnc)
-                break
-                comment = piexif.helper.UserComment.load(exif_dict['Exif'][piexif.ExifIFD.UserComment])
-                meta_dict = json.loads(comment)
-                meta_dict["image"] = filename
-                meta_list.append(meta_dict) # list of dictionaries containing the meta data 
-                i += 1
-
-    context = {"meta":meta_list}
-    return render(request, "plants/farmville.html", context)
-
 
 
 """
@@ -65,12 +30,17 @@ csv_upload, this function renders the user page for uploading a csv file into th
 """
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['customer'])
-def csv_upload(request, has_started="False"):
+def csv_upload(request, destination="start"):
     customer = request.user.customer
     form = CustomerFileUploadForm(instance=customer)
-    if has_started == "False": # Just render the form if the start button is pressed
+    if destination == "start": # Just render the form if the start button is pressed
         return render(request, "plants/user.html", {'form':form, 'should_generate':True, 'customer':customer})
-    else:
+    elif destination == "farmville":
+        meta = json.loads(customer.meta_list)
+        print("META")
+        print(meta)
+        return render(request, "plants/farmville.html", {"meta":meta})
+    elif destination == "upload":
         if request.method == 'POST':
             form = CustomerFileUploadForm(request.POST, request.FILES, instance=customer)
             name = ""
@@ -80,7 +50,40 @@ def csv_upload(request, has_started="False"):
             if form.is_valid() and name.endswith(".zip"):
                 messages.success(request, name + " Successfully Uploaded")
                 upload = form.save()
-                return render(request, 'plants/user.html', {'form':form, 'should_generate':True, 'customer':customer})
+
+                user_upload = request.user.customer.user_file_upload
+                media_storage = PublicMediaStorage()
+                meta_list = []
+                with ZipFile(user_upload, 'r') as zipfile:
+                    zipfile.extractall()
+                    i = 0
+                    file_list = zipfile.namelist()
+                    root = file_list[0]
+                    file_list.remove(file_list[0]) # remove pesky root directory
+                    for filename in file_list: 
+                        if filename.endswith(".jpg"): # Other files shouldn't be trusted
+                            exif_dict = piexif.load(root + str(i) + '.jpg') # file_list[0] is the name of the root dir in zip file
+                            comment = piexif.helper.UserComment.load(exif_dict['Exif'][piexif.ExifIFD.UserComment])
+                            meta_dict = json.loads(comment)
+                            
+                            data = zipfile.read(root + str(i) + '.jpg')
+                            dataEnc = BytesIO(data)
+                            modified_filename = filename.split("/")[1] # get the filename after the /
+                            full_image_path = "%s/%s/%s" % (request.user.customer.name, meta_dict["date_captured"], modified_filename)
+                            media_storage.save(full_image_path, dataEnc)
+                            print(full_image_path)
+
+                    
+                            meta_dict["image"] = full_image_path
+                            meta_list.append(meta_dict) # list of dictionaries containing the meta data 
+                            i += 1
+                    
+                    customer.meta_list = json.dumps(meta_list)
+                    customer.save() # add the list of dictionaries to the database
+                    user_upload.delete(save=False) # no longer need the zip file
+
+                return render(request, 'plants/user.html', {'form':form, 'should_generate':True, 
+                                                            'customer':customer})
             else:
                 messages.error(request, "Please upload a file ending with \".zip\"")
         else: # If not a post, make a blank form 

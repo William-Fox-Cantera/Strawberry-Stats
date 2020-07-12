@@ -246,7 +246,7 @@ function switchTabs(event, tab) {
                 tablinks[i].className = tablinks[i].className.replace(" active", "");
             }
             // Loop for displaying the berry icons
-            let imgStyle = " border: 5px solid black; border-radius: 10%; margin-left: 150px; margin-top: 60px; margin-bottom: 200px;  min-height: 170px; min-width: 170px; ";
+            let imgStyle = " border: 5px solid black; border-radius: 10%; margin-left: 150px; margin-top: 60px; margin-bottom: 200px;  max-height: 250px; max-width: 250px; ";
             let plantNumStyle = " style=\"margin-left: -11vw; margin-top: 250px;\"";
             let latStyle = " style=\"margin-left: -8vw; margin-top: 275px;\"";
             let lonStyle = " style=\"margin-left: -11.3vw; margin-top: 300px;\"";
@@ -362,28 +362,27 @@ var geojson = {
         
     ]
 };
-
+console.log("s3://tric-static-bucket/private/" + meta[0]['image'])
 for (let i = 0; i < meta.length; i++) {
     var feature = {
             'type': 'Feature',
             'properties': {
             'message': 'Hello',
             'iconSize': [60, 60],
-            'image': meta[i]['image']
+            'image': "https://tric-static-bucket.s3.us-east-2.amazonaws.com/media/" + meta[i]['image']
         },
         'geometry': {
             'type': 'Point',
-            'coordinates': [meta[i]['gps_head_lat'], meta[i]['gps_head_lon']]
+            'coordinates': [meta[i]['gps_head_lon'], meta[i]['gps_head_lat']]
         }
     }
     geojson['features'].push(feature);
 }
 
-
 var map = new mapboxgl.Map({
 container: 'map',
     style: 'mapbox://styles/mapbox/streets-v11',
-    center: [-75.596, 39.1122],
+    center: [meta[0]['gps_head_lon'], meta[0]['gps_head_lat']],
     zoom: 15
 });
 
@@ -410,7 +409,7 @@ geojson.features.forEach(function(marker) {
     })
     .setLngLat(marker.geometry.coordinates)
     //.setPopup(new mapboxgl.Popup({ offset: 25 }) // add popups
-    .setHTML('<p><img src="' + marker.properties.image + '" style="min-height: 150; min-width: 150px;"></p>' // Add image to the popup
+    .setHTML('<p><img src="' + marker.properties.image + '" style="max-height: 150; max-width: 150px;"></p>' // Add image to the popup
             + '<H4>Plant Number: 12</H4>' 
             + '<H4 style="font-size: 14px;">Latitude:' + marker.geometry.coordinates[0] + '</H4>'
             + '<H4 style="font-size: 14px;">Longitude:' + marker.geometry.coordinates[1] + '</H4>'
