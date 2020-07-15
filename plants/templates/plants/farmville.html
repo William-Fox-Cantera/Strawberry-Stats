@@ -169,9 +169,23 @@
     .save:hover {
         background-color: rgb(95, 91, 91);
     }
+
+    select {
+        appearance: none; 
+        outline: 0; 
+        background-color: #f1f1f1;
+        color: black; 
+        cursor: pointer; 
+        border: none; 
+        min-height: 5.2vh;
+    }
+
+    select:hover {
+        background-color: rgb(95, 91, 91);
+    }
 </style>
 
-<a class="button" href="{% url 'csv_upload' False %}" style="vertical-align:middle"><span>Back</span></a>
+<a class="button" href="{% url 'zip_upload' 'start' %}" style="vertical-align:middle"><span>Back</span></a>
 <div class="instruction-box card" style="width: 20rem; min-height: 50%; max-height: 50%">
     <div class="card-body" style="width: 400px">
       <a href="#" onclick="changeText('previous')" class="tips">&#8249;</a> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
@@ -193,6 +207,12 @@
 <div class="tab">
     <button class="tablinks" onclick="switchTabs(event, 'map')">Map</button>
     <button class="tablinks" onclick="switchTabs(event, 'saved')">Saved Plants</button>
+    <select id="dropdown" onchange="swapDataSets()" class="tablinks">
+        <option style="display:none;" selected>Select Dataset</option>
+        {% for filename in upload_names %}
+            <option>{{ filename }}</option>
+        {% endfor %}
+    </select>
 </div>
 <div id="map"></div> <!-- The main map -->
 
@@ -201,6 +221,7 @@
 var tipIndex = 0;
 var favorites = [];
 var MAX_MESSAGES = 3;
+
 
 function saveLocal() {
     //localStorage.setItem('plantNum', favorites[0]['plantNum']);
@@ -353,7 +374,16 @@ function parseIconHTML(htmlString) {
 // MAPBOX STUFF
 mapboxgl.accessToken = 'pk.eyJ1Ijoid2lsbGlhbWZveCIsImEiOiJja2JzY3V0dTcwMGJ6MnZzYWF2cjRsNXYwIn0.fbOk4CcYFDOMA_nG9JCauA';
 var meta = JSON.parse("{{meta|safe}}".replace(/'/g,'"'));
-console.log(meta)
+let select = document.getElementById("dropdown");
+let meta_id = select.options[1].text;
+var meta_dict = meta[meta_id];
+console.log(meta_dict);
+function swapDataSets() {
+    let select = document.getElementById("dropdown");
+    let meta_id = select.options[select.selectedIndex].text;
+    meta_dict = meta[meta_id];
+    location.reload();
+}
 
 
 var geojson = {
@@ -362,18 +392,18 @@ var geojson = {
         
     ]
 };
-console.log("s3://tric-static-bucket/private/" + meta[0]['image'])
-for (let i = 0; i < meta.length; i++) {
+
+for (let i = 0; i < meta_dict.length; i++) {
     var feature = {
             'type': 'Feature',
             'properties': {
             'message': 'Hello',
             'iconSize': [60, 60],
-            'image': "https://tric-static-bucket.s3.us-east-2.amazonaws.com/media/" + meta[i]['image']
+            'image': "https://tric-static-bucket.s3.us-east-2.amazonaws.com/media/" + meta_dict[i]['image']
         },
         'geometry': {
             'type': 'Point',
-            'coordinates': [meta[i]['gps_head_lon'], meta[i]['gps_head_lat']]
+            'coordinates': [meta_dict[i]['gps_head_lon'], meta_dict[i]['gps_head_lat']]
         }
     }
     geojson['features'].push(feature);
@@ -382,7 +412,7 @@ for (let i = 0; i < meta.length; i++) {
 var map = new mapboxgl.Map({
 container: 'map',
     style: 'mapbox://styles/mapbox/streets-v11',
-    center: [meta[0]['gps_head_lon'], meta[0]['gps_head_lat']],
+    center: [meta_dict[0]['gps_head_lon'], meta_dict[0]['gps_head_lat']],
     zoom: 15
 });
 

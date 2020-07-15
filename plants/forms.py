@@ -9,7 +9,7 @@ class CustomerForm(ModelForm):
     class Meta:
         model = Customer
         fields = '__all__'
-        exclude = ['user', 'user_file_upload']
+        exclude = ['user', 'user_file_upload', 'meta_list']
 
 
 """

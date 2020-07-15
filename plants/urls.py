@@ -16,13 +16,15 @@ urlpatterns = [
     path('customer/<str:pk>/', views.customer, name="customer"),
     
     # File Upload
-    path('csv_upload/', views.csv_upload, name="csv_upload"),
-    path('csv_upload/<str:destination>/', views.csv_upload, name="csv_upload"),
+    path('zip_upload/', views.zip_upload, name="zip_upload"),
+    path('zip_upload/<str:destination>/', views.zip_upload, name="zip_upload"),
 
     # CRUD
     path('create_order/<str:pk>/', views.createOrder, name="create_order"),
     path('update_order/<str:pk>/', views.updateOrder, name="update_order"),
     path('delete_order/<str:pk>/', views.deleteOrder, name="delete_order"),
+    path('delete_zip_upload/', views.delete_zip_upload, name="delete_zip_upload"),
+    path('delete_zip_upload/<str:filename>/', views.delete_zip_upload, name="delete_zip_upload"),
 
     # Password reset stuff
     path('reset_password/', auth_views.PasswordResetView.as_view(template_name="plants/password_reset.html"),

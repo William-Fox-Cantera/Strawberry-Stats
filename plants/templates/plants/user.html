@@ -1,5 +1,6 @@
 {% extends 'plants/main.html' %}
 {% load static %}
+{% load html_filters %}
 {% block content %}
 {% include 'plants/status.html' %}
 
@@ -89,6 +90,37 @@
         -ms-transform: translate(-50%, -50%);
         transform: translate(-50%, -50%);
     }
+
+    .container .box {
+        margin:1vw; 
+        display: table;
+    }
+
+    .container .box .box-row { 
+        display:table-row; 
+    } 
+
+    .upload-list {
+        margin-left: -22vw;
+        margin-top: -12vh;
+        min-height: 40vw;
+        position: fixed;
+        transform: translate(0%, 30%);
+        background-color: #FFFFFF;
+        width: 400px;
+        border-style: groove;
+        border-color: black;
+    }
+
+    .filename {
+        text-align: justify;
+        position: none;
+        display: inline-block !important; 
+        margin-left: 20px;
+        margin-bottom: 20px;;
+        width: 46%;
+    }
+
 </style>
 
 {% if should_generate %} <!-- Renders the file upload once the start button is pressed -->
@@ -97,25 +129,43 @@
         Upload your zip file, hit submit, then press the view button
     </p>
 </div>
-<div class="submit-box col-md-9">
-    <div class="card card-body">
-        <form method="POST" action="{% url 'csv_upload' 'upload' %}" enctype="multipart/form-data">
-            {% csrf_token %}
-            {{form.as_p}}
-            <input class="btn btn-primary"  type="submit" name="Update Information">
-            <br>
-            <!-- Django error message displayer -->
-            {% if messages %}
-                <ul class="messages">
-                    {% for message in messages %}
-                    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-        </form>
+<div class="container">
+    <div class="box">
+        <div class="box-row">
+            <div class="submit-box col-md-9">
+                <div class="card card-body">
+                        <form method="POST" id="submitform" action="{% url 'zip_upload' 'upload' %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        {{form.as_p}}
+                        <input class="btn btn-primary" type="submit" name="Update Information">
+                        <br>
+                        <!-- Django error message displayer -->
+                        {% if messages %}
+                            <ul class="messages">
+                                {% for message in messages %}
+                                    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <div class="upload-list">
+                    <h3 style="padding-left: 20px;">Current Datasets Uploaded</h3>
+                    {% if upload_names %}
+                        {% for filename in upload_names %}
+                            <a class="filename" style="font-family: fantasy; font-size: 22px;">{{ filename }}</a> 
+                            <a class="filename delete btn btn-sm btn-danger" style="max-width: 100px;" href="{% url 'delete_zip_upload' upload_names|get_at_index:forloop.counter0 %}">Delete</a>
+                            <br>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
 </div>
-<a class="view-button button" href="{% url 'csv_upload' 'farmville' %}" style="vertical-align:middle"><span>view</span></a>
+<a class="view-button button" href="{% url 'zip_upload' 'farmville' %}" style="vertical-align:middle"><span>view</span></a>
 {% else %} <!-- Button to start the process -->
 <div class="instructions">
     <p>
@@ -123,7 +173,7 @@
     </p>
 </div>
 <div>
-    <a class="button" href="{% url 'csv_upload' %}" style="vertical-align:middle"><span>Start</span></a>
+    <a class="button" href="{% url 'zip_upload' %}" style="vertical-align:middle"><span>Start</span></a>
 </div>
 {% endif %}
 

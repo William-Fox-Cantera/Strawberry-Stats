@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from plants.storage_backends import PublicMediaStorage, PrivateMediaStorage
 from .helpers import get_csv_path, get_profile_pic_path
+from django.contrib.postgres.fields import JSONField
+
 
 # Create your models here.
 
@@ -26,7 +28,7 @@ class Customer(models.Model):
                                         storage=PrivateMediaStorage(), 
                                         null=True, 
                                         blank=True)
-    meta_list = models.TextField(null=True)
+    meta_list = JSONField(null=True, default=dict)
 
     """
     __str__: Method to enumerate the class, especially in the database.

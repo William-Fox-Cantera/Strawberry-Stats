@@ -21,34 +21,56 @@ from io import BytesIO
 
 
 """
-csv_upload, this function renders the user page for uploading a csv file into the database.
+delete_zip_upload, removes the key and value pair from the meta-list attribute.
+                   first gives the user a warning about deleting.
+
+:param request: the html request
+:param filename: the name of the file to be deleted
+"""
+def delete_zip_upload(request, filename=""):
+    customer = request.user.customer
+    form = CustomerFileUploadForm(instance=customer)
+    print(filename)
+    print(customer.meta_list[filename])
+    customer.meta_list.pop(filename)
+    customer.save()
+    files = [ k for k, v in customer.meta_list.items() ]
+    context = {'should_generate':True, 'upload_names':files, 'form':form}
+    return render(request, "plants/user.html", context)
+
+
+"""
+zip_upload, this function renders the user page for uploading a csv file into the database.
             If the has_started boolean is false, it just displays a start button to get 
             the user, started. Otherwise it displays the form for submitting the files.
 
 :param request: the html request from the template user.html
-:param has_started: boolean, true if the start button has been pressed yet
+:param destination: string, what action the function should take
 """
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['customer'])
-def csv_upload(request, destination="start"):
+def zip_upload(request, destination="start"):
     customer = request.user.customer
+    files = [ k for k, v in customer.meta_list.items() ]
     form = CustomerFileUploadForm(instance=customer)
     if destination == "start": # Just render the form if the start button is pressed
-        return render(request, "plants/user.html", {'form':form, 'should_generate':True, 'customer':customer})
+        return render(request, "plants/user.html", {'form':form, 'should_generate':True, 
+                                                    'customer':customer, 'upload_names':files })
     elif destination == "farmville":
-        meta = json.loads(customer.meta_list)
-        print("META")
-        print(meta)
-        return render(request, "plants/farmville.html", {"meta":meta})
+        meta = customer.meta_list
+        return render(request, "plants/farmville.html", {"meta":meta, 'upload_names':files})
     elif destination == "upload":
         if request.method == 'POST':
+            upload_name = ""
+            for filename, file in request.FILES.items(): # get the zip file name
+                upload_name = request.FILES[filename].name
+            if upload_name in customer.meta_list.keys(): # make sure the same file isn't being uploaded more than once
+                messages.error(request, "A file with this name has already been uploaded.")
+                return render(request, "plants/user.html", {'form':form, 'should_generate':True, 'customer':customer, 'upload_names':files})
+        
             form = CustomerFileUploadForm(request.POST, request.FILES, instance=customer)
-            name = ""
-            for filename, file in request.FILES.items():
-                name = request.FILES[filename].name
-
-            if form.is_valid() and name.endswith(".zip"):
-                messages.success(request, name + " Successfully Uploaded")
+            if form.is_valid() and upload_name.endswith(".zip"):
+                messages.success(request, upload_name + " Successfully Uploaded")
                 upload = form.save()
 
                 user_upload = request.user.customer.user_file_upload
@@ -71,19 +93,19 @@ def csv_upload(request, destination="start"):
                             modified_filename = filename.split("/")[1] # get the filename after the /
                             full_image_path = "%s/%s/%s" % (request.user.customer.name, meta_dict["date_captured"], modified_filename)
                             media_storage.save(full_image_path, dataEnc)
-                            print(full_image_path)
 
                     
                             meta_dict["image"] = full_image_path
                             meta_list.append(meta_dict) # list of dictionaries containing the meta data 
                             i += 1
-                    
-                    customer.meta_list = json.dumps(meta_list)
+                    print("HERE2")
+                    customer.meta_list[upload_name] = meta_list
                     customer.save() # add the list of dictionaries to the database
-                    user_upload.delete(save=False) # no longer need the zip file
-
+                    user_upload.delete(save=False) # removes from s3
+                    customer.user_file_upload.delete() # removes from postgresql
+                    files.append(upload_name)
                 return render(request, 'plants/user.html', {'form':form, 'should_generate':True, 
-                                                            'customer':customer})
+                                                            'customer':customer, 'upload_names':files})
             else:
                 messages.error(request, "Please upload a file ending with \".zip\"")
         else: # If not a post, make a blank form 
@@ -91,7 +113,7 @@ def csv_upload(request, destination="start"):
 
         context = { 'form':form, 'should_generate':True, 'customer':customer,
                     'total_plants':100, 'date_captured':"6/16/2020",
-                    'percent_flowered':"60%" }
+                    'percent_flowered':"60%", 'upload_names':files }
         return render(request, 'plants/user.html', context)
 
 
