@@ -30,11 +30,10 @@ delete_zip_upload, removes the key and value pair from the meta-list attribute.
 def delete_zip_upload(request, filename=""):
     customer = request.user.customer
     form = CustomerFileUploadForm(instance=customer)
-    print(filename)
-    print(customer.meta_list[filename])
     customer.meta_list.pop(filename)
     customer.save()
-    files = [ k for k, v in customer.meta_list.items() ]
+    files = [ k for k, v in customer.meta_list.items() ]    
+
     context = {'should_generate':True, 'upload_names':files, 'form':form}
     return render(request, "plants/user.html", context)
 
@@ -98,7 +97,6 @@ def zip_upload(request, destination="start"):
                             meta_dict["image"] = full_image_path
                             meta_list.append(meta_dict) # list of dictionaries containing the meta data 
                             i += 1
-                    print("HERE2")
                     customer.meta_list[upload_name] = meta_list
                     customer.save() # add the list of dictionaries to the database
                     user_upload.delete(save=False) # removes from s3

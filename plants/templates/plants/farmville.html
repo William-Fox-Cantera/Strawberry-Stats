@@ -83,7 +83,7 @@
     #saved {
         border-style: solid;
         border-width: thick;
-        border-color: #000000;
+        border-color: #beb4b4;
         width: 80%;
         height: 60%;
         margin: 0; 
@@ -183,10 +183,41 @@
     select:hover {
         background-color: rgb(95, 91, 91);
     }
+
+    .highlight-overlay {
+        z-index: -1;
+        transform: translate(1485%, 40%);
+        width: 120px;
+        margin-bottom: -2px;
+        background-color: #9c9999;
+        font-size: 24px;
+        font-family: arial;
+        border-left-color: #000000;
+    }
+
+    .calculation-box {
+        height: 200px;
+        width: 150px;
+        position: absolute;
+        bottom: 40px;
+        left: 10px;
+        background-color: rgba(255, 255, 255, 0.9);
+        padding: 15px;
+        text-align: center;
+        z-index: 1; 
+        transform: translate(247%, -36%);
+    }
+
+    .current-dataset {
+        transform:translate(19.5%, 49%);
+        font-size: 28px;
+        font-family: arial;
+    }
 </style>
 
+<p class="current-dataset" id="current-data">Current Dataset &#8594 </p>
 <a class="button" href="{% url 'zip_upload' 'start' %}" style="vertical-align:middle"><span>Back</span></a>
-<div class="instruction-box card" style="width: 20rem; min-height: 50%; max-height: 50%">
+<div class="instruction-box card" style="width: 22rem; min-height: 50%; max-height: 50%; overflow-y: scroll; overflow-x: hidden;">
     <div class="card-body" style="width: 400px">
       <a href="#" onclick="changeText('previous')" class="tips">&#8249;</a> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
       <h5 class="card-title" style="font-family: fantasy; font-size: 28px; display: inline-block">Tips</h5>       
@@ -214,39 +245,19 @@
         {% endfor %}
     </select>
 </div>
-<div id="map"></div> <!-- The main map -->
 
+<div id="map"></div> <!-- The main map -->
+<p class="highlight-overlay">Draw</p>
+<p class="highlight-overlay">Delete</p>
+<div class="calculation-box">
+    <p>Highlight areas using the draw tool.</p>
+    <div id="calculated-area" style="z-index: 1;"></div>
+</div>
 
 <script type="text/javascript">
 var tipIndex = 0;
 var favorites = [];
 var MAX_MESSAGES = 3;
-
-
-function saveLocal() {
-    //localStorage.setItem('plantNum', favorites[0]['plantNum']);
-    console.log(localStorage.getItem('plantNum'));
-}
-
-/*
-* addStyle, adds a string in for style to the html.
-*
-* Consumes: 
-* Produces: 
-*/
-function addStyle(toBeStyled, styleString) {
-    let styleIndex = toBeStyled.indexOf("style");
-    if (styleIndex === -1) {
-        for (let i = 0; i < toBeStyled.length; i++) {
-            if (toBeStyled[i+1] === ">") {
-                toBeStyled = toBeStyled.substring(0, i) + styleString + toBeStyled.substring(i, toBeStyled.length);
-            }
-        }
-    } else {
-
-    }
-    return toBeStyled;
-}
 
 
 /*
@@ -278,7 +289,6 @@ function switchTabs(event, tab) {
                 let styleIndex = imageHTML.indexOf("style");
                 let modifiedHTML = imageHTML.substring(0, styleIndex+7) + imgStyle + "\"></p>";
                 favoritesDiv.innerHTML += modifiedHTML;   
-
 
                 let plantNum = favorites[i]['plantNum'];
                 let modifiedPlantNum = plantNum.substring(0, 3) + plantNumStyle + plantNum.substring(3, plantNum.length);
@@ -333,9 +343,10 @@ function changeText(buttonType) {
                            bigger/smaller based on how far you zoomed in or out.";
                 break;
             case 3: 
-                message = "You'll see that certain portions of the field are covered in red, yellow, and green sections.\
-                           This is an analysis of which parts of your field have strawberry plants that are currently\
-                           flowering. Red indicates little to no flowering, yellow for some, and green for many.";
+                message = "Click the draw tool and make dots which will connect to form polygons. Click with\
+                           both mouse buttons at the same time for the last point in your shape to exit draw mode. Click anywhere\
+                           outside the orange highlighted shape to save, and it will turn blue. Click on the shape and then hit the\
+                           trash button to remove it.";
                 break;
             default:
                 tipIndex = 0;
@@ -370,18 +381,51 @@ function parseIconHTML(htmlString) {
         }
         return parsedArr;
 }
+
+
+/* saveLocal, saves a value as a string in local storage for later.
+ *
+ * Consumes: Key -> String, the key to store the data at
+ * Produces: Nothing
+ * 
+*/
+function saveLocal(key, value) {
+    localStorage.setItem(meta_id + key, value);
+}
+
+
+/*
+ * getLocal, gets a string from local storage from the current dataset.
+ *
+ * Consumes: value -> String, the value to get
+ * Produces: A string containing the value
+*/
+function getLocal(value) {
+    return localStorage.getItem(meta_id + value);
+}
 //-----------------------------------------------------------------------------------------------------------------------------------------
 // MAPBOX STUFF
 mapboxgl.accessToken = 'pk.eyJ1Ijoid2lsbGlhbWZveCIsImEiOiJja2JzY3V0dTcwMGJ6MnZzYWF2cjRsNXYwIn0.fbOk4CcYFDOMA_nG9JCauA';
 var meta = JSON.parse("{{meta|safe}}".replace(/'/g,'"'));
-let select = document.getElementById("dropdown");
-let meta_id = select.options[1].text;
+
+var select = document.getElementById("dropdown");
+var selected = select.selectedIndex;
+var optionList = document.getElementsByTagName("option");
+//localStorage.clear();
+var currentData = localStorage.getItem("currentDataset");
+
+console.log(currentData)
+var meta_id = currentData === null ? select[1].text : currentData; // Default to first available set
 var meta_dict = meta[meta_id];
-console.log(meta_dict);
+var currentDataLabel = document.getElementById("current-data");
+currentDataLabel.innerHTML += meta_id;
+
 function swapDataSets() {
-    let select = document.getElementById("dropdown");
-    let meta_id = select.options[select.selectedIndex].text;
-    meta_dict = meta[meta_id];
+    let mySelect = document.getElementById("dropdown");
+    let new_meta_id = mySelect.options[mySelect.selectedIndex].text;
+    meta_dict = meta[new_meta_id];
+    console.log(new_meta_id)
+    localStorage.setItem("currentDataset", new_meta_id);
     location.reload();
 }
 
@@ -415,6 +459,102 @@ container: 'map',
     center: [meta_dict[0]['gps_head_lon'], meta_dict[0]['gps_head_lat']],
     zoom: 15
 });
+
+var draw = new MapboxDraw({
+    displayControlsDefault: false,
+    controls: {
+        polygon: true,
+        trash: true
+    }
+});
+
+map.addControl(draw);
+map.on('draw.create', updateArea);
+map.on('draw.delete', updateArea);
+map.on('draw.update', updateArea);
+
+var geojsonFormat = {
+    "type": "Feature",
+    "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+            [
+                
+            ]
+        ]
+    },
+    "properties": {
+        "name": ""
+    }
+};
+
+
+// For getting the coordinates of each shape in the current session
+if (getLocal("shapeCount") === null) saveLocal("shapeCount", 0);
+var shapeCount = Number(getLocal("shapeCount"));
+var storageKeyList = [];
+console.log(meta_id)
+for ( var i = 0, len = localStorage.length; i < len; ++i ) {
+ //console.log( localStorage.key(i) + localStorage.getItem( localStorage.key( i ) ) );
+
+    if (localStorage.key(i).includes("_") && localStorage.key(i).includes(meta_id)) {
+        let modifiedKey = localStorage.key(i).split("_")[1]
+        console.log(modifiedKey)
+        storageKeyList.push(modifiedKey);
+    }
+}
+console.log(storageKeyList);
+console.log(shapeCount)
+for (let i = 0; i < shapeCount; i++) {
+    coords = getLocal("_" + storageKeyList[i]).split(",");
+    for (let j = 0; j < coords.length-1; j += 2) 
+        geojsonFormat.geometry.coordinates[0].push([parseFloat(coords[j]), parseFloat(coords[j+1])]);
+    draw.add(geojsonFormat);
+    geojsonFormat.geometry.coordinates[0] = []; // Reset
+}
+storageKeyList = [];
+
+/*
+ * updateArea, gets the area in square meters made with polygonson the map. Also save the polygons
+ *             coordinates in local storage.
+ *
+ * Consumes: e -> event, the event of the draw action
+ * Produces: Nothing
+*/
+function updateArea(e) {
+    let data = draw.getAll();
+    var answer = document.getElementById('calculated-area');
+    if (e.type === "draw.delete") {
+        let count = Number(getLocal("shapeCount"));
+        draw.delete(e.features[0].id);
+        localStorage.removeItem(meta_id + "_" + e.features[0].id)
+        console.log(e.features[0].id)
+
+        console.log(localStorage.getItem(meta_id + "_" + e.features[0].id))
+        count -= 1;
+        saveLocal("shapeCount", count);
+        shapeCount = count;
+    }
+    if (e.type === "draw.create") {
+        console.log(e.features[0].id)
+        saveLocal("_" + e.features[0].id, data.features[getLocal("shapeCount")].geometry.coordinates);
+        shapeCount++;
+        saveLocal("shapeCount", shapeCount);
+    }
+    if (data.features.length > 0) {
+        var area = turf.area(data);
+        // restrict to area to 2 decimal points
+        var rounded_area = Math.round(area * 100) / 100;
+        answer.innerHTML =
+        '<p><strong>' + 
+        rounded_area +
+        '</strong></p><p>total square meters</p>';
+    } else {
+        answer.innerHTML = '';
+    }
+}
+
+
 
 // add markers to map
 geojson.features.forEach(function(marker) {
