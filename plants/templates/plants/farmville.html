@@ -217,12 +217,12 @@
 
 <p class="current-dataset" id="current-data">Current Dataset &#8594 </p>
 <a class="button" href="{% url 'zip_upload' 'start' %}" style="vertical-align:middle"><span>Back</span></a>
-<div class="instruction-box card" style="width: 22rem; min-height: 50%; max-height: 50%; overflow-y: scroll; overflow-x: hidden;">
+<div class="instruction-box card" style="width: 22rem; min-height: 50%; max-height: 50%;">
     <div class="card-body" style="width: 400px">
       <a href="#" onclick="changeText('previous')" class="tips">&#8249;</a> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
       <h5 class="card-title" style="font-family: fantasy; font-size: 28px; display: inline-block">Tips</h5>       
       &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<a href="#" onclick="changeText('next')" class="tips">&#8250;</a>
-      <p id="tips-text" style="font-size: 21px; max-width: 70%;">This is a map displaying your field. Zoom in with the scroll wheel
+      <p id="tips-text" style="font-size: 21px; max-width: 80%; height: 40vh; overflow-y: scroll; overflow-x: hidden;">This is a map displaying your field. Zoom in with the scroll wheel
                            to get a better view of each strawberry icon. Each of these icons represents an actual 
                            on the ground location of a plant. Hover over them with the cursor to see more information,
                            like images, coordinates, and more. 
@@ -253,6 +253,7 @@
     <p>Highlight areas using the draw tool.</p>
     <div id="calculated-area" style="z-index: 1;"></div>
 </div>
+<p id="userShapeComment"></p>
 
 <script type="text/javascript">
 var tipIndex = 0;
@@ -414,7 +415,6 @@ var optionList = document.getElementsByTagName("option");
 //localStorage.clear();
 var currentData = localStorage.getItem("currentDataset");
 
-console.log(currentData)
 var meta_id = currentData === null ? select[1].text : currentData; // Default to first available set
 var meta_dict = meta[meta_id];
 var currentDataLabel = document.getElementById("current-data");
@@ -424,7 +424,6 @@ function swapDataSets() {
     let mySelect = document.getElementById("dropdown");
     let new_meta_id = mySelect.options[mySelect.selectedIndex].text;
     meta_dict = meta[new_meta_id];
-    console.log(new_meta_id)
     localStorage.setItem("currentDataset", new_meta_id);
     location.reload();
 }
@@ -472,6 +471,8 @@ map.addControl(draw);
 map.on('draw.create', updateArea);
 map.on('draw.delete', updateArea);
 map.on('draw.update', updateArea);
+map.on('draw.selectionchange', updateArea);
+
 
 var geojsonFormat = {
     "type": "Feature",
@@ -490,29 +491,25 @@ var geojsonFormat = {
 
 
 // For getting the coordinates of each shape in the current session
-if (getLocal("shapeCount") === null) saveLocal("shapeCount", 0);
-var shapeCount = Number(getLocal("shapeCount"));
 var storageKeyList = [];
-console.log(meta_id)
 for ( var i = 0, len = localStorage.length; i < len; ++i ) {
  //console.log( localStorage.key(i) + localStorage.getItem( localStorage.key( i ) ) );
 
-    if (localStorage.key(i).includes("_") && localStorage.key(i).includes(meta_id)) {
+    if (localStorage.key(i).includes(meta_id + "_")) {
+        console.log(localStorage.key(i));
         let modifiedKey = localStorage.key(i).split("_")[1]
-        console.log(modifiedKey)
         storageKeyList.push(modifiedKey);
     }
 }
-console.log(storageKeyList);
-console.log(shapeCount)
-for (let i = 0; i < shapeCount; i++) {
+
+for (let i = 0; i < storageKeyList.length; i++) {
     coords = getLocal("_" + storageKeyList[i]).split(",");
     for (let j = 0; j < coords.length-1; j += 2) 
         geojsonFormat.geometry.coordinates[0].push([parseFloat(coords[j]), parseFloat(coords[j+1])]);
     draw.add(geojsonFormat);
     geojsonFormat.geometry.coordinates[0] = []; // Reset
 }
-storageKeyList = [];
+
 
 /*
  * updateArea, gets the area in square meters made with polygonson the map. Also save the polygons
@@ -524,22 +521,20 @@ storageKeyList = [];
 function updateArea(e) {
     let data = draw.getAll();
     var answer = document.getElementById('calculated-area');
+    console.log(e)
+    if (e.type === "draw.selectionchange") {
+        let userShapeComment = document.getElementById("userShapeComment");
+        userShapeComment.innerHTML = userAreaComment;
+    }
     if (e.type === "draw.delete") {
-        let count = Number(getLocal("shapeCount"));
         draw.delete(e.features[0].id);
-        localStorage.removeItem(meta_id + "_" + e.features[0].id)
-        console.log(e.features[0].id)
-
-        console.log(localStorage.getItem(meta_id + "_" + e.features[0].id))
-        count -= 1;
-        saveLocal("shapeCount", count);
-        shapeCount = count;
+        if (e.features[0].geometry.coordinates[0].includes(e.features[0].geometry.coordinates[0][0])) {
+            localStorage.removeItem(meta_id + "_" + e.features[0].geometry.coordinates[0][0])
+        }
     }
     if (e.type === "draw.create") {
-        console.log(e.features[0].id)
-        saveLocal("_" + e.features[0].id, data.features[getLocal("shapeCount")].geometry.coordinates);
-        shapeCount++;
-        saveLocal("shapeCount", shapeCount);
+        saveLocal("_" + e.features[0].geometry.coordinates[0][0], e.features[0].geometry.coordinates);
+        var userAreaComment = window.prompt("Enter a comment about this area:");
     }
     if (data.features.length > 0) {
         var area = turf.area(data);
@@ -557,6 +552,7 @@ function updateArea(e) {
 
 
 // add markers to map
+let berryCount = 0;
 geojson.features.forEach(function(marker) {
     // create a DOM element for the marker
     var berryIcon = document.createElement('div');
@@ -578,9 +574,8 @@ geojson.features.forEach(function(marker) {
         closeOnClick: false
     })
     .setLngLat(marker.geometry.coordinates)
-    //.setPopup(new mapboxgl.Popup({ offset: 25 }) // add popups
     .setHTML('<p><img src="' + marker.properties.image + '" style="max-height: 150; max-width: 150px;"></p>' // Add image to the popup
-            + '<H4>Plant Number: 12</H4>' 
+            + '<H4>Plant Number: '+ berryCount + ' </H4>' 
             + '<H4 style="font-size: 14px;">Latitude:' + marker.geometry.coordinates[0] + '</H4>'
             + '<H4 style="font-size: 14px;">Longitude:' + marker.geometry.coordinates[1] + '</H4>'
             + '<H4 style="background-color: red;">Has Flowers? No</H4>'); 
@@ -606,6 +601,7 @@ geojson.features.forEach(function(marker) {
         map.getCanvas().style.cursor = '';
         popup.remove();
     });
+    berryCount++;
 });
 </script>
 
