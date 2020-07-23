@@ -408,7 +408,7 @@ function getLocal(value) {
 // MAPBOX STUFF
 mapboxgl.accessToken = 'pk.eyJ1Ijoid2lsbGlhbWZveCIsImEiOiJja2JzY3V0dTcwMGJ6MnZzYWF2cjRsNXYwIn0.fbOk4CcYFDOMA_nG9JCauA';
 var meta = JSON.parse("{{meta|safe}}".replace(/'/g,'"'));
-
+console.log(meta)
 var select = document.getElementById("dropdown");
 var selected = select.selectedIndex;
 var optionList = document.getElementsByTagName("option");
@@ -558,8 +558,8 @@ geojson.features.forEach(function(marker) {
     var berryIcon = document.createElement('div');
     berryIcon.className = 'marker';
     berryIcon.style.backgroundImage = 'url(https://tric-static-bucket.s3.us-east-2.amazonaws.com/static/images/strawberry.png)';
-    berryIcon.style.width = '30px';//marker.properties.iconSize[0] + 'px';
-    berryIcon.style.height = '30px';//marker.properties.iconSize[1] + 'px';
+    berryIcon.style.width = '30px';
+    berryIcon.style.height = '30px';
     berryIcon.style.backgroundColor = 'rgba(0,255,0,.1)';
     berryIcon.style.borderRadius = '5px';
 

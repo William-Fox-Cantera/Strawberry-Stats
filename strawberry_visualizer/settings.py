@@ -21,7 +21,6 @@ if not IS_LIVE:
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
 
@@ -45,6 +44,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'plants.apps.PlantsConfig', # Used for signals 
     'django_filters',
+    'django_celery_results',
+    'celery_progress',
     'storages',
 ]
 
@@ -171,8 +172,6 @@ else:
 
 STATICFILES_DIRS = (os.path.join(BASE_DIR, 'static'),)
 
-
-
 # STMP Configuration (simple mail transfer protocol)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
@@ -181,3 +180,8 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'wfcantera@gmail.com'
 EMAIL_HOST_PASSWORD = os.getenv('SMTP_PASSWORD') if IS_LIVE else SMTP_PASSWORD
 
+# Celery Broker
+CELERY_BROKER_URL = 'redis://h:p26dfeb76e133047290c1aa4dce605dedabc1625a4ddab16a2ef67c9af362ddaa@ec2-54-158-72-30.compute-1.amazonaws.com:29639'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_BACKEND = 'django-db'

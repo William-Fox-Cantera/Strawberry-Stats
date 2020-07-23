@@ -102,10 +102,11 @@
 
     .upload-list {
         margin-left: -22vw;
-        margin-top: -12vh;
-        min-height: 40vw;
-        position: fixed;
-        transform: translate(0%, 30%);
+        min-height: 30vw;
+        position: absolute;
+        top: 25%;
+        left: 40%;
+        transform: translate(0%, 15%);
         background-color: #FFFFFF;
         width: 400px;
         border-style: groove;
@@ -121,60 +122,93 @@
         width: 46%;
     }
 
+    .progress-bar {
+       height: 40px;
+       top: 25%;
+       max-width: 98%;
+       margin: auto;
+       background-color: #68a9ef; 
+       width: 0%;
+    }
+
+    #progress-bar-message {
+        font-size: 24px;
+        display: flex;
+        justify-content: center;
+        left: 50%;
+        font-family: arial;
+    }
+
+    #zip-instruction {
+        position: absolute;
+        top: 25%;
+        left: 0%;
+        text-align: center;
+        font-size: 24px;
+        font-family: fantasy;
+        transform: translate(120%, 300%);
+    }
 </style>
 
 {% if should_generate %} <!-- Renders the file upload once the start button is pressed -->
-<div>
-    <p class="instructions">
-        Upload your zip file, hit submit, then press the view button
-    </p>
-</div>
-<div class="container">
-    <div class="box">
-        <div class="box-row">
-            <div class="submit-box col-md-9">
-                <div class="card card-body">
-                        <form method="POST" id="submitform" action="{% url 'zip_upload' 'upload' %}" enctype="multipart/form-data">
-                        {% csrf_token %}
-                        {{form.as_p}}
-                        <input class="btn btn-primary" type="submit" name="Update Information">
-                        <br>
-                        <!-- Django error message displayer -->
-                        {% if messages %}
-                            <ul class="messages">
-                                {% for message in messages %}
-                                    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-                                {% endfor %}
-                            </ul>
-                        {% endif %}
-                    </form>
-                </div>
-            </div>
-            <div class="col-md-9">
-                <div class="upload-list">
-                    <h3 style="padding-left: 20px;">Current Datasets Uploaded</h3>
-                    {% if upload_names %}
-                        {% for filename in upload_names %}
-                            <a class="filename" style="font-family: fantasy; font-size: 22px;">{{ filename }}</a> 
-                            <a class="filename delete btn btn-sm btn-danger" style="max-width: 100px;" href="{% url 'delete_zip_upload' upload_names|get_at_index:forloop.counter0 %}">Delete</a>
+    <div id="progress-bar-message">Waiting for progress to start...</div>
+    {% if task_id %}
+        <div id='progress-bar' class='progress-bar'>&nbsp;</div>
+        <script src="{% static 'celery_progress/celery_progress.js' %}"></script>
+        <script>
+            function customResult(resultElement, result) {
+                $( resultElement ).css({"border": "3px solid black", "background-color": "green"});
+                document.getElementById("progress-bar-message").innerHTML = "Upload Complete";
+            }
+            $(function () {
+                var progressUrl = "{% url 'celery_progress:task_status' task_id %}";
+                CeleryProgressBar.initProgressBar(progressUrl, {
+                    onSuccess: customResult,
+                });
+            });
+        </script>
+    {% endif %}
+    <p id="zip-instruction">Upload your zip file, hit submit, then press the view button</p>
+    <div class="container">
+        <div class="box">
+            <div class="box-row">
+                <div class="submit-box col-md-9">
+                    <div class="card card-body">
+                            <form method="POST" id="submitform" action="{% url 'zip_upload' 'upload' %}" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            {{form.as_p}}
+                            <input class="btn btn-primary" type="submit" name="Update Information">
                             <br>
-                        {% endfor %}
-                    {% endif %}
+                            <!-- Django error message displayer -->
+                            {% if messages %}
+                                <ul class="messages">
+                                    {% for message in messages %}
+                                        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </form>
+                    </div>
+                </div>
+                <div class="col-md-9">
+                    <div class="upload-list">
+                        <h3 style="padding-left: 20px;">Current Datasets Uploaded</h3>
+                        {% if upload_names %}
+                            {% for filename in upload_names %}
+                                <a class="filename" style="font-family: fantasy; font-size: 22px;">{{ filename }}</a> 
+                                <a class="filename delete btn btn-sm btn-danger" style="max-width: 100px;" href="{% url 'delete_zip_upload' upload_names|get_at_index:forloop.counter0 %}">Delete</a>
+                                <br>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
-<a class="view-button button" href="{% url 'zip_upload' 'farmville' %}" style="vertical-align:middle"><span>view</span></a>
+    <a class="view-button button" href="{% url 'zip_upload' 'farmville' %}" style="vertical-align:middle"><span>view</span></a>
 {% else %} <!-- Button to start the process -->
-<div class="instructions">
-    <p>
-        Welcome to the site, press the button below to get started!
-    </p>
-</div>
-<div>
-    <a class="button" href="{% url 'zip_upload' %}" style="vertical-align:middle"><span>Start</span></a>
-</div>
+<p class="instructions">Welcome to the site, press the button below to get started!</p>
+<a class="button" href="{% url 'zip_upload' %}" style="vertical-align:middle"><span>Start</span></a>
 {% endif %}
 
 {% endblock content %}

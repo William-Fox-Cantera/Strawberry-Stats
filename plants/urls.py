@@ -19,6 +19,7 @@ urlpatterns = [
     path('zip_upload/', views.zip_upload, name="zip_upload"),
     path('zip_upload/<str:destination>/', views.zip_upload, name="zip_upload"),
 
+
     # CRUD
     path('create_order/<str:pk>/', views.createOrder, name="create_order"),
     path('update_order/<str:pk>/', views.updateOrder, name="update_order"),

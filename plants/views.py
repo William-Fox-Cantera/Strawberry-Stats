@@ -11,13 +11,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
 from django.conf import settings
-from django.core.files.storage import FileSystemStorage
-from .storage_backends import PrivateMediaStorage
-import json
-import piexif
-import piexif.helper
-from zipfile import ZipFile
-from io import BytesIO
+from .tasks import upload_images
 
 
 """
@@ -30,8 +24,9 @@ delete_zip_upload, removes the key and value pair from the meta-list attribute.
 def delete_zip_upload(request, filename=""):
     customer = request.user.customer
     form = CustomerFileUploadForm(instance=customer)
-    customer.meta_list.pop(filename)
-    customer.save()
+    if (customer.meta_list.get(filename) != None):
+        customer.meta_list.pop(filename)
+        customer.save()
     files = [ k for k, v in customer.meta_list.items() ]    
 
     context = {'should_generate':True, 'upload_names':files, 'form':form}
@@ -61,49 +56,20 @@ def zip_upload(request, destination="start"):
     elif destination == "upload":
         if request.method == 'POST':
             upload_name = ""
+            form = CustomerFileUploadForm(request.POST, request.FILES, instance=customer)
             for filename, file in request.FILES.items(): # get the zip file name
                 upload_name = request.FILES[filename].name
             if upload_name in customer.meta_list.keys(): # make sure the same file isn't being uploaded more than once
                 messages.error(request, "A file with this name has already been uploaded.")
                 return render(request, "plants/user.html", {'form':form, 'should_generate':True, 'customer':customer, 'upload_names':files})
-        
-            form = CustomerFileUploadForm(request.POST, request.FILES, instance=customer)
             if form.is_valid() and upload_name.endswith(".zip"):
                 messages.success(request, upload_name + " Successfully Uploaded")
                 upload = form.save()
-
                 user_upload = request.user.customer.user_file_upload
-                media_storage = PublicMediaStorage()
-                meta_list = []
-                with ZipFile(user_upload, 'r') as zipfile:
-                    zipfile.extractall()
-                    i = 0
-                    file_list = zipfile.namelist()
-                    root = file_list[0]
-                    file_list.remove(file_list[0]) # remove pesky root directory
-                    for filename in file_list: 
-                        if filename.endswith(".jpg"): # Other files shouldn't be trusted
-                            exif_dict = piexif.load(root + str(i) + '.jpg') # file_list[0] is the name of the root dir in zip file
-                            comment = piexif.helper.UserComment.load(exif_dict['Exif'][piexif.ExifIFD.UserComment])
-                            meta_dict = json.loads(comment)
-                            
-                            data = zipfile.read(root + str(i) + '.jpg')
-                            dataEnc = BytesIO(data)
-                            modified_filename = filename.split("/")[1] # get the filename after the /
-                            full_image_path = "%s/%s/%s" % (request.user.customer.name, meta_dict["date_captured"], modified_filename)
-                            media_storage.save(full_image_path, dataEnc)
-
-                    
-                            meta_dict["image"] = full_image_path
-                            meta_list.append(meta_dict) # list of dictionaries containing the meta data 
-                            i += 1
-                    customer.meta_list[upload_name] = meta_list
-                    customer.save() # add the list of dictionaries to the database
-                    user_upload.delete(save=False) # removes from s3
-                    customer.user_file_upload.delete() # removes from postgresql
-                    files.append(upload_name)
-                return render(request, 'plants/user.html', {'form':form, 'should_generate':True, 
-                                                            'customer':customer, 'upload_names':files})
+                task = upload_images.delay(upload_name, customer.name) #upload_images.delay(user_upload, upload_name, customer)
+                files.append(upload_name)
+                return render(request, 'plants/user.html', { 'form':form, 'should_generate':True, 
+                                                             'customer':customer, 'upload_names':files, 'task_id':task.task_id})
             else:
                 messages.error(request, "Please upload a file ending with \".zip\"")
         else: # If not a post, make a blank form 
