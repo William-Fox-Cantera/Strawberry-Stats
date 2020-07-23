@@ -11,6 +11,10 @@ from io import BytesIO
 from .models import Customer
 
 
+@app.task
+def add(x, y):
+    return x + y
+
 @shared_task(bind=True)
 def upload_images(self, upload_name, customer_name):
     media_storage = PublicMediaStorage()
@@ -35,7 +39,7 @@ def upload_images(self, upload_name, customer_name):
                 media_storage.save(full_image_path, dataEnc)
                 meta_dict["image"] = full_image_path
                 meta_list.append(meta_dict) # list of dictionaries containing the meta data 
-                progress_recorder.set_progress(i, 3, f"uploading image: {i}")
+                progress_recorder.set_progress(i+1, len(jpg_list), f"uploading image: {i}")
         customer.meta_list[upload_name] = meta_list
         customer.save() # add the list of dictionaries to the database
         customer.user_file_upload.delete(save=False) # removes from postgresql, s3
