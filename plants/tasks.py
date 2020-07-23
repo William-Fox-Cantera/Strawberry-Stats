@@ -11,10 +11,6 @@ from io import BytesIO
 from .models import Customer
 
 
-@app.task
-def add(x, y):
-    return x + y
-
 @shared_task(bind=True)
 def upload_images(self, upload_name, customer_name):
     media_storage = PublicMediaStorage()
