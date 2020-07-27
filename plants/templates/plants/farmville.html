@@ -446,7 +446,7 @@ for (let i = 0; i < meta_dict.length; i++) {
         },
         'geometry': {
             'type': 'Point',
-            'coordinates': [meta_dict[i]['gps_head_lon'], meta_dict[i]['gps_head_lat']]
+            'coordinates': [meta_dict[i]['updated_gps_lon'], meta_dict[i]['updated_gps_lat']]
         }
     }
     geojson['features'].push(feature);
@@ -455,7 +455,7 @@ for (let i = 0; i < meta_dict.length; i++) {
 var map = new mapboxgl.Map({
 container: 'map',
     style: 'mapbox://styles/mapbox/streets-v11',
-    center: [meta_dict[0]['gps_head_lon'], meta_dict[0]['gps_head_lat']],
+    center: [meta_dict[0]['updated_gps_lon'], meta_dict[0]['updated_gps_lat']],
     zoom: 15
 });
 
@@ -472,7 +472,7 @@ map.on('draw.create', updateArea);
 map.on('draw.delete', updateArea);
 map.on('draw.update', updateArea);
 map.on('draw.selectionchange', updateArea);
-
+map.on('zoom', updateIconSize)
 
 var geojsonFormat = {
     "type": "Feature",
@@ -553,6 +553,7 @@ function updateArea(e) {
 
 // add markers to map
 let berryCount = 0;
+var berryArray = [];
 geojson.features.forEach(function(marker) {
     // create a DOM element for the marker
     var berryIcon = document.createElement('div');
@@ -564,7 +565,7 @@ geojson.features.forEach(function(marker) {
     berryIcon.style.borderRadius = '5px';
 
     // add marker to map
-    new mapboxgl.Marker(berryIcon)
+    var berryMarker = new mapboxgl.Marker(berryIcon)
     .setLngLat(marker.geometry.coordinates)
     .addTo(map);
 
@@ -601,8 +602,27 @@ geojson.features.forEach(function(marker) {
         map.getCanvas().style.cursor = '';
         popup.remove();
     });
+    berryArray.push(berryIcon);
     berryCount++;
 });
+
+
+function updateIconSize() {
+    if (map.getZoom() > 21.5) {
+        sizeUpdater("15px");
+    } 
+    if (map.getZoom() < 21.5) {
+        sizeUpdater("30px");
+    }
+}
+
+function sizeUpdater(size) {
+    let docElement = document.getElementsByClassName("marker");
+    for (let i = 0; i < docElement.length; i++) {
+        docElement[i].style.width = size;
+        docElement[i].style.height = size;
+    }
+}
 </script>
 
 {% endblock content %}

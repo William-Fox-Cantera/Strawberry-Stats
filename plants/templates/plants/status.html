@@ -1,9 +1,6 @@
 <br>
 
 <style>
-	#logo{
-    }
-
     body{
         background-color: #ebeff5;
     }
@@ -27,6 +24,11 @@
         font-size: 24px;
         font-family: fantasy;
     }
+
+	.stats {
+		width: 118%;
+		text-align: center;
+	}
 </style>
 <div class="row">
 	<div class="col">
@@ -36,7 +38,7 @@
 			  		<h5 class="card-title">Date Captured</h5>
 			  	</div>
 			  	<div class="card-body">
-			    	<h3 class="card-title">{{date_captured}}</h3>
+			    	<h3 class="card-title stats">{{date_captured}}</h3>
 			  	</div>
 			</div>
 		</div>
@@ -48,8 +50,8 @@
 			  	<div class="card-header">
 			  		<h5 class="card-title">Total Plants</h5>
 			  	</div>
-			  	<div class="card-body">
-			    	<h3 class="card-title">{{total_plants}}</h3>
+			  	<div class="card-body stats">
+			    	<h3 class="card-title stats">{{total_plants}}</h3>
 			  	</div>
 			</div>
 		</div>
@@ -61,8 +63,8 @@
 			  	<div class="card-header">
 			  		<h5 class="card-title">Percent Flowered</h5>
 			  	</div>
-			  	<div class="card-body">
-			    	<h3 class="card-title">{{percent_flowered}}</h3>
+			  	<div class="card-body stats">
+			    	<h3 class="card-title stats">{{percent_flowered}}</h3>
 			  	</div>
 			</div>
 		</div>

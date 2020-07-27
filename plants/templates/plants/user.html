@@ -61,7 +61,7 @@
     }
 
     .view-button {
-        top: 70%;
+        top: 80%;
     }
 
     .messages {
@@ -122,62 +122,42 @@
         width: 46%;
     }
 
-    .progress-bar {
-       height: 40px;
-       top: 25%;
-       max-width: 98%;
-       margin: auto;
-       background-color: #68a9ef; 
-       width: 0%;
-    }
-
-    #progress-bar-message {
-        font-size: 24px;
-        display: flex;
-        justify-content: center;
-        left: 50%;
-        font-family: arial;
-    }
-
     #zip-instruction {
         position: absolute;
-        top: 25%;
+        top: 60%;
         left: 0%;
         text-align: center;
         font-size: 24px;
         font-family: fantasy;
         transform: translate(120%, 300%);
     }
+
+    #upload-gif {
+        visibility: hidden;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        transform: translate(0%, -20%);
+        width: 200px;
+        height: 200px;
+    }
+
+    .submitform {
+        transform: translate(0px, 50%);
+    }
 </style>
 
-{% if should_generate %} <!-- Renders the file upload once the start button is pressed -->
-    <div id="progress-bar-message">Waiting for progress to start...</div>
-    {% if task_id %}
-        <div id='progress-bar' class='progress-bar'>&nbsp;</div>
-        <script src="{% static 'celery_progress/celery_progress.js' %}"></script>
-        <script>
-            function customResult(resultElement, result) {
-                $( resultElement ).css({"border": "3px solid black", "background-color": "green"});
-                document.getElementById("progress-bar-message").innerHTML = "Upload Complete";
-            }
-            $(function () {
-                var progressUrl = "{% url 'celery_progress:task_status' task_id %}";
-                CeleryProgressBar.initProgressBar(progressUrl, {
-                    onSuccess: customResult,
-                });
-            });
-        </script>
-    {% endif %}
+{% if should_generate %} <!-- Renders the file upload once the start button is pressed --> 
     <p id="zip-instruction">Upload your zip file, hit submit, then press the view button</p>
     <div class="container">
         <div class="box">
             <div class="box-row">
                 <div class="submit-box col-md-9">
-                    <div class="card card-body">
-                            <form method="POST" id="submitform" action="{% url 'zip_upload' 'upload' %}" enctype="multipart/form-data">
+                    <div class="card card-body submitform">
+                        <form method="POST" id="submitform" action="{% url 'zip_upload' 'upload' %}" enctype="multipart/form-data">
                             {% csrf_token %}
                             {{form.as_p}}
-                            <input class="btn btn-primary" type="submit" name="Update Information">
+                            <input class="btn btn-primary" type="submit" onclick="showUploadGif()" name="Update Information">
                             <br>
                             <!-- Django error message displayer -->
                             {% if messages %}
@@ -205,7 +185,13 @@
             </div>
         </div>
     </div>
+    <img src="https://tric-static-bucket.s3.us-east-2.amazonaws.com/static/images/uploading.gif" id="upload-gif">
     <a class="view-button button" href="{% url 'zip_upload' 'farmville' %}" style="vertical-align:middle"><span>view</span></a>
+    <script type="text/javascript">
+        function showUploadGif() {
+            document.getElementById("upload-gif").style.visibility = "visible";
+        }
+    </script>
 {% else %} <!-- Button to start the process -->
 <p class="instructions">Welcome to the site, press the button below to get started!</p>
 <a class="button" href="{% url 'zip_upload' %}" style="vertical-align:middle"><span>Start</span></a>

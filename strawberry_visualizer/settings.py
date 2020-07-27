@@ -179,9 +179,3 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'wfcantera@gmail.com'
 EMAIL_HOST_PASSWORD = os.getenv('SMTP_PASSWORD') if IS_LIVE else SMTP_PASSWORD
-
-# Celery Broker
-CELERY_BROKER_URL = 'redis://h:p26dfeb76e133047290c1aa4dce605dedabc1625a4ddab16a2ef67c9af362ddaa@ec2-54-158-72-30.compute-1.amazonaws.com:29639'
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_BACKEND = 'django-db'

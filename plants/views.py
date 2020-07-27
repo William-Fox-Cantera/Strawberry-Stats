@@ -11,7 +11,16 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
 from django.conf import settings
-from .tasks import upload_images
+from django.core.files.storage import FileSystemStorage
+from .storage_backends import PrivateMediaStorage, PublicMediaStorage
+import json
+import piexif
+import piexif.helper
+from zipfile import ZipFile
+from io import BytesIO
+from .models import Customer
+
+
 
 
 """
@@ -66,10 +75,10 @@ def zip_upload(request, destination="start"):
                 messages.success(request, upload_name + " Successfully Uploaded")
                 upload = form.save()
                 user_upload = request.user.customer.user_file_upload
-                task = upload_images.delay(upload_name, customer.name) #upload_images.delay(user_upload, upload_name, customer)
+                upload_images(upload_name, customer.name)
                 files.append(upload_name)
                 return render(request, 'plants/user.html', { 'form':form, 'should_generate':True, 
-                                                             'customer':customer, 'upload_names':files, 'task_id':task.task_id})
+                                                             'customer':customer, 'upload_names':files })
             else:
                 messages.error(request, "Please upload a file ending with \".zip\"")
         else: # If not a post, make a blank form 
@@ -79,6 +88,34 @@ def zip_upload(request, destination="start"):
                     'total_plants':100, 'date_captured':"6/16/2020",
                     'percent_flowered':"60%", 'upload_names':files }
         return render(request, 'plants/user.html', context)
+
+
+def upload_images(upload_name, customer_name):
+    media_storage = PublicMediaStorage()
+    meta_list = []
+    customer = Customer.objects.get(name=customer_name)
+    with ZipFile(customer.user_file_upload, 'r') as zipfile:
+        zipfile.extractall()
+        i = 1
+        file_list = zipfile.namelist()
+        root = file_list[0]
+        file_list.remove(file_list[0]) # remove pesky root directory
+        jpg_list = [name for name in file_list if name.endswith(".jpg")]
+        for filename in jpg_list: 
+            if filename.endswith(".jpg"): # Other files shouldn't be trusted
+                exif_dict = piexif.load(str(i) + '.jpg') # file_list[0] is the name of the root dir in zip file
+                comment = piexif.helper.UserComment.load(exif_dict['Exif'][piexif.ExifIFD.UserComment])
+                meta_dict = json.loads(comment)
+                data = zipfile.read(str(i) + '.jpg')
+                dataEnc = BytesIO(data)
+                full_image_path = "%s/%s/%s" % (customer_name, meta_dict["date_captured"], filename)
+                media_storage.save(full_image_path, dataEnc)
+                meta_dict["image"] = full_image_path
+                meta_list.append(meta_dict) # list of dictionaries containing the meta data 
+                i += 1
+        customer.meta_list[upload_name] = meta_list
+        customer.save() # add the list of dictionaries to the database
+        customer.user_file_upload.delete(save=False) # removes from postgresql, s3
 
 
 """
