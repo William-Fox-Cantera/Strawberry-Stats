@@ -19,9 +19,49 @@ import piexif.helper
 from zipfile import ZipFile
 from io import BytesIO
 from .models import Customer
+from django.http import JsonResponse
 
 
+"""
+remove_plant_index, removes the is_favorited and notes attributes from the given index in the users meta_list.
+                    This way, it won't be rendered next time the user goes to the page.
 
+Consumes: Nothing
+Produces: Nothing
+"""
+def remove_plant_index(request):
+    user = request.user.customer
+    user_meta = user.meta_list
+    set_to_modify = request.GET.get('current_dataset', None)
+    favorite_to_remove = request.GET.get('plant_index', None)
+    user_meta[set_to_modify][int(favorite_to_remove)].pop('is_favorited')
+    user_meta[set_to_modify][int(favorite_to_remove)].pop('notes')
+    user.save()
+    return JsonResponse({})
+
+
+"""
+save_favorite_plants, gets an ajax request with the data about a favorited plant. Saves this
+                      in the database by adding an attribute to the meta list to indicate that
+                      plant is favorited.
+
+Consumes: Nothing
+Produces: Nothing
+"""
+def save_favorite_plants(request):
+    user = request.user.customer
+    user_meta = user.meta_list
+    set_to_modify = request.GET.get('current_dataset', None)
+    data_to_add = json.loads(request.GET.get('notes', None))
+
+    for key, val in data_to_add.items():
+        user_meta[set_to_modify][int(key)]['notes'] = val
+        user_meta[set_to_modify][int(key)]['is_favorited'] = 'True'
+
+    user.save()
+    return JsonResponse(data_to_add)
+
+    
 
 """
 delete_zip_upload, removes the key and value pair from the meta-list attribute.
@@ -75,7 +115,7 @@ def zip_upload(request, destination="start"):
                 messages.success(request, upload_name + " Successfully Uploaded")
                 upload = form.save()
                 user_upload = request.user.customer.user_file_upload
-                upload_images(upload_name, customer.name)
+                upload_images(request, upload_name)
                 files.append(upload_name)
                 return render(request, 'plants/user.html', { 'form':form, 'should_generate':True, 
                                                              'customer':customer, 'upload_names':files })
@@ -90,10 +130,19 @@ def zip_upload(request, destination="start"):
         return render(request, 'plants/user.html', context)
 
 
-def upload_images(upload_name, customer_name):
+"""
+upload_images, takes all of the images int he users uploaded zip file, uploads them the aws s3, then saves
+               the meta data from the images in a JSONField for the customer. The zip file is deleted after.
+
+:param upload_name: string, the filename of the zip file uploaded
+:param customer_name: string, the name of the customer doing the upload
+"""
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['customer'])
+def upload_images(request, upload_name):
     media_storage = PublicMediaStorage()
     meta_list = []
-    customer = Customer.objects.get(name=customer_name)
+    customer = request.user.customer
     with ZipFile(customer.user_file_upload, 'r') as zipfile:
         zipfile.extractall()
         i = 1
@@ -108,7 +157,7 @@ def upload_images(upload_name, customer_name):
                 meta_dict = json.loads(comment)
                 data = zipfile.read(str(i) + '.jpg')
                 dataEnc = BytesIO(data)
-                full_image_path = "%s/%s/%s" % (customer_name, meta_dict["date_captured"], filename)
+                full_image_path = "%s/%s/%s" % (customer.name, meta_dict["date_captured"], filename)
                 media_storage.save(full_image_path, dataEnc)
                 meta_dict["image"] = full_image_path
                 meta_list.append(meta_dict) # list of dictionaries containing the meta data 

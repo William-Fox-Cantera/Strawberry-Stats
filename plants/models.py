@@ -30,6 +30,7 @@ class Customer(models.Model):
                                         blank=True)
     meta_list = JSONField(null=True, default=dict)
 
+
     """
     __str__: Method to enumerate the class, especially in the database.
     """

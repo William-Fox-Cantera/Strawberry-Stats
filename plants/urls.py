@@ -1,8 +1,13 @@
 from django.urls import path
+from django.conf.urls import url
 from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
+    # AJAX
+    url(r'^ajax/save_favorite_plants/$', views.save_favorite_plants, name='save_favorite_plants'),
+    url(r'^ajax/remove_plant_index/$', views.remove_plant_index, name='remove_plant_index'),
+
     # Login/Registration
     path('register/', views.registerPage, name="register"),
     path('login/', views.loginPage, name="login"),

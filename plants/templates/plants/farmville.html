@@ -152,18 +152,19 @@
     }
 
     #favorites {
-        width: 100%;
+        transform: translate(20%, 0%);
+        width: 90%;
         height: 100%;
-        display: flex;
-        flex-wrap: wrap;
+      
         overflow-y: scroll;
     }
 
     .save {
         vertical-align:middle; 
-        transform:translate(138%, 50%); 
+        transform:translate(138%, 120%); 
         width: 10vw; 
         background-color: #f1f1f1;
+        border: 1px solid rgb(161, 158, 158);
     }
 
     .save:hover {
@@ -184,17 +185,6 @@
         background-color: rgb(95, 91, 91);
     }
 
-    .highlight-overlay {
-        z-index: -1;
-        transform: translate(1485%, 40%);
-        width: 120px;
-        margin-bottom: -2px;
-        background-color: #9c9999;
-        font-size: 24px;
-        font-family: arial;
-        border-left-color: #000000;
-    }
-
     .calculation-box {
         height: 200px;
         width: 150px;
@@ -205,13 +195,19 @@
         padding: 15px;
         text-align: center;
         z-index: 1; 
-        transform: translate(247%, -36%);
+        transform: translate(247%, -38%);
     }
 
     .current-dataset {
         transform:translate(19.5%, 49%);
         font-size: 28px;
         font-family: arial;
+    }
+
+    .mapboxgl-popup-content {
+        border: 2px solid violet;
+
+        background-color: rgb(219, 210, 210);
     }
 </style>
 
@@ -231,7 +227,7 @@
 </div>
 
 <div class="tabcontent" id="saved">
-    <a class="button save" onclick="saveLocal()"><span>save</span></a>
+    <a class="button save" onclick="sendToDB()"><span>save</span></a>
     <ul id="favorites" class="favs"></ul>
 </div>
 
@@ -247,8 +243,6 @@
 </div>
 
 <div id="map"></div> <!-- The main map -->
-<p class="highlight-overlay">Draw</p>
-<p class="highlight-overlay">Delete</p>
 <div class="calculation-box">
     <p>Highlight areas using the draw tool.</p>
     <div id="calculated-area" style="z-index: 1;"></div>
@@ -257,8 +251,37 @@
 
 <script type="text/javascript">
 var tipIndex = 0;
+var areFavoritesLoaded = false;
 var favorites = [];
+var favoritesStorage = [];
+var indicesAndNotes = {};
 var MAX_MESSAGES = 3;
+
+
+/*
+* sendToDB, uses ajax to send the favorites list to the Django backend and save the favorites for later.
+*
+* Consumes: Nothing
+* Produces: Nothing
+*/
+function sendToDB() {
+    for (let i = 0; i < favoritesStorage.length; i++) {
+        indicesAndNotes[favoritesStorage[i]] = document.getElementById("note_" + favoritesStorage[i]).value;
+    }
+    $.ajax({
+        url: '{% url "save_favorite_plants" %}',
+        data: {
+          'current_dataset':meta_id,
+          'notes':JSON.stringify(indicesAndNotes)
+        },
+        dataType: 'json',
+        success: function (data) {
+          if (data.is_taken) {
+            alert("A user with this username already exists.");
+          }
+        }
+      });
+}
 
 
 /*
@@ -275,42 +298,12 @@ function switchTabs(event, tab) {
             document.getElementById(tab).style.display = "block";
             event.currentTarget.className += " active";
             tablinks = document.getElementsByClassName("tablinks");
-            for (i = 0; i < tablinks.length; i++) { // Stop the interactivity for the tab so it doesn't get stuck on dark grey
+            for (i = 0; i < tablinks.length; i++)  // Stop the interactivity for the tab so it doesn't get stuck on dark grey
                 tablinks[i].className = tablinks[i].className.replace(" active", "");
-            }
-            // Loop for displaying the berry icons
-            let imgStyle = " border: 5px solid black; border-radius: 10%; margin-left: 150px; margin-top: 60px; margin-bottom: 200px;  max-height: 250px; max-width: 250px; ";
-            let plantNumStyle = " style=\"margin-left: -11vw; margin-top: 250px;\"";
-            let latStyle = " style=\"margin-left: -8vw; margin-top: 275px;\"";
-            let lonStyle = " style=\"margin-left: -11.3vw; margin-top: 300px;\"";
-            let flowerStyle = " style=\"margin-left: -10.9vw; margin-top: 325px;\"";
-            let favoritesDiv = document.getElementById("favorites");
-            for (var i = 0; i < favorites.length; i++) {
-                let imageHTML = favorites[i]['imageLink'];
-                let styleIndex = imageHTML.indexOf("style");
-                let modifiedHTML = imageHTML.substring(0, styleIndex+7) + imgStyle + "\"></p>";
-                favoritesDiv.innerHTML += modifiedHTML;   
-
-                let plantNum = favorites[i]['plantNum'];
-                let modifiedPlantNum = plantNum.substring(0, 3) + plantNumStyle + plantNum.substring(3, plantNum.length);
-                favoritesDiv.innerHTML += modifiedPlantNum; 
-
-                let lat = favorites[i]['latitude'];
-                let latStyleIndex = lat.indexOf("style");
-                let modifiedLat = lat.substring(0, latStyleIndex) + latStyle + lat.substring(28, lat.length);
-                favoritesDiv.innerHTML += modifiedLat;
-
-                let lon = favorites[i]['longitude'];
-                let lonStyleIndex = lon.indexOf("style");
-                let modifiedLon = lon.substring(0, lonStyleIndex) + lonStyle + lon.substring(28, lon.length);
-                favoritesDiv.innerHTML += modifiedLon; 
-    
-                let flowers = favorites[i]['hasFlowers'];
-                let flowerStyleIndex = flowers.indexOf("style");
-                let modifiedFlowers = flowers.substring(0, flowerStyleIndex) + flowerStyle + flowers.substring(34, flowers.length);
-                console.log(modifiedFlowers);
-                favoritesDiv.innerHTML += modifiedFlowers;         
-            }
+            addExistingFavorites();
+            for (var i = 0; i < favorites.length; i++) 
+                addFavoriteHTML(favorites[i], null);
+            favorites = []; // Remove from favorites once done so they don't get add more than once
         } else {
             tabcontent = document.getElementsByClassName("tabcontent");
             for (i = 0; i < tabcontent.length; i++) {
@@ -320,6 +313,105 @@ function switchTabs(event, tab) {
         }
 }
 
+
+/*
+* addExistingFavorites, for each item in the meta data, if it has been favorited, it is
+*                       rendered to the favorited list.
+*
+* Consumes: Nothing
+* Produces: Nothing
+*/
+function addExistingFavorites() {
+    if (!areFavoritesLoaded) {
+        for (let i = 0; i < meta_dict.length; i++) {
+            if (meta_dict[i]['is_favorited'] === 'True') {
+                console.log(meta_dict[i])
+                console.log(meta_dict[i]['notes'])
+                addFavoriteHTML(i, meta_dict[i]['notes']);
+            }
+        }
+        areFavoritesLoaded = true;
+    }
+}
+
+
+/*
+* addFavoriteHTML, adds the necessary html and styling for the given plant index.
+* 
+* Consumes: Nothing
+* Produces: Nothing
+*/
+function addFavoriteHTML(plantIndex, notes) {
+    let favoritesDiv = document.getElementById("favorites");
+    let width = 1920;
+    let height = 1080;
+    let scaleReduce = 2.5;
+    let newWidth = width/scaleReduce;
+    let newHeight = height/scaleReduce;
+    let imageHTML = "<img name=' " + plantIndex + " ' src=\"https://tric-static-bucket.s3.us-east-2.amazonaws.com/media/" + 
+    meta_dict[plantIndex]['image'] + "\"" + " style=\"width: " + newWidth + 'px' + "; height: " + newHeight 
+    + 'px' + "; border: 1px solid black; margin-top: 60px;\">";
+    favoritesDiv.innerHTML += imageHTML;   
+
+    let plantNumHTML = "<p name=' " + plantIndex + " ' style=\"display: table-row; width: 400px; height 200px; font-family: arial;\
+    font-size: 24px; transform: translate(770px, -440px);\">Plant Number: " + plantIndex + "</p>";
+    favoritesDiv.innerHTML += plantNumHTML; 
+
+    let idHTML = "<p name=' " + plantIndex + " ' style=\"display: table-row; width: 400px; height 200px; font-family: arial;\
+    font-size: 24px; transform: translate(770px, -420px);\">Random ID: " + meta_dict[plantIndex]["plant_id"] + "</p>";
+    favoritesDiv.innerHTML += idHTML; 
+
+    let coordsHTML = "<p name=' " + plantIndex + " ' style=\"display: table-row; width: 400px; height 200px; font-family: arial;\
+    font-size: 16px; transform: translate(770px, -400px);\">Location: "
+    + meta_dict[plantIndex]["updated_gps_lat"] + ", " + meta_dict[plantIndex]["updated_gps_lon"] + "</p>";
+    favoritesDiv.innerHTML += coordsHTML; 
+
+    let appendEnd = "</textarea></p>";
+    if (notes != null) 
+        appendEnd = notes + "</textarea></p>";
+    let note = "<p name=' " + plantIndex + " ' style=\"display: table-row; width: 400px; height 200px; font-family: arial;\
+    font-size: 24px; transform: translate(770px, -550px);\">Notes: <textarea style=\"display: table-row; transform: translate(0px, 170px);\"\
+    rows='5' cols='24' type='text' id='" + "note_" + plantIndex + "'\
+    placeholder='Enter Notes...'>" + appendEnd;
+    favoritesDiv.innerHTML += note;
+
+    let delButton = "<a name=' " + plantIndex + " ' id='" + "delete_" + plantIndex + "' class='btn btn-sm btn-danger' style='display: table-row; width: 200px; height 200px; font-family: arial;\
+    font-size: 24px; transform: translate(770px, -330px);' onclick='removeFavorite(this.name)'>Remove</a>";
+    favoritesDiv.innerHTML += delButton;
+
+    favoritesStorage.push(plantIndex); // The favorites array needs to be cleared but I still need those indices when saving
+}
+
+
+/*
+* removeFavorite, removes the image and additional information when the delete button is pressed.
+*
+* Consumes: name -> string, the id for the favorite
+* Produces: Nothing
+*/
+function removeFavorite(name) {
+    // Remove from screen
+    let toRemove = document.getElementsByName(name);
+    let parentNode = toRemove[0].parentNode;
+    let length = toRemove.length;
+    for (let i = 0; i < length; i++)
+        parentNode.removeChild(toRemove[0]);    
+
+    // Remove from database
+    $.ajax({
+        url: '{% url "remove_plant_index" %}',
+        data: {
+          'current_dataset':meta_id,
+          'plant_index':name
+        },
+        dataType: 'json',
+        success: function (data) {
+          if (data.is_taken) {
+            alert("A user with this username already exists.");
+          }
+        }
+      });
+}
 
 /*
 * changeText, changes the text of the tips box when next or previous button is pressed
@@ -360,30 +452,6 @@ function changeText(buttonType) {
 } 
 
 
-/*
-* parseIconHTML, parses the html associated with the strawberry icon hover html.
-* 
-* Consumes: htmlString -> String, the string to be parsed
-* Produces: An array of strings (parsed)
-*/
-function parseIconHTML(htmlString) {
-    let parsedString = "";
-    let parsedArr = [];
-    for (let i = 74; i < htmlString.length; i++) { // 74 because that's where the first <p> tag starts
-        parsedString += htmlString[i];
-            if (htmlString[i] === "<" && htmlString[i+1] === "/" && htmlString[i+6] != null) { // Ignore last </div>
-                while (htmlString[i] != ">") {
-                    i++;
-                    parsedString += htmlString[i];
-                }
-                parsedArr.push(parsedString);
-                parsedString = ""; // Reset
-            }
-        }
-        return parsedArr;
-}
-
-
 /* saveLocal, saves a value as a string in local storage for later.
  *
  * Consumes: Key -> String, the key to store the data at
@@ -408,14 +476,13 @@ function getLocal(value) {
 // MAPBOX STUFF
 mapboxgl.accessToken = 'pk.eyJ1Ijoid2lsbGlhbWZveCIsImEiOiJja2JzY3V0dTcwMGJ6MnZzYWF2cjRsNXYwIn0.fbOk4CcYFDOMA_nG9JCauA';
 var meta = JSON.parse("{{meta|safe}}".replace(/'/g,'"'));
-console.log(meta)
 var select = document.getElementById("dropdown");
 var selected = select.selectedIndex;
 var optionList = document.getElementsByTagName("option");
-//localStorage.clear();
 var currentData = localStorage.getItem("currentDataset");
 
 var meta_id = currentData === null ? select[1].text : currentData; // Default to first available set
+console.log(meta_id)
 var meta_dict = meta[meta_id];
 var currentDataLabel = document.getElementById("current-data");
 currentDataLabel.innerHTML += meta_id;
@@ -493,15 +560,12 @@ var geojsonFormat = {
 // For getting the coordinates of each shape in the current session
 var storageKeyList = [];
 for ( var i = 0, len = localStorage.length; i < len; ++i ) {
- //console.log( localStorage.key(i) + localStorage.getItem( localStorage.key( i ) ) );
-
     if (localStorage.key(i).includes(meta_id + "_")) {
         console.log(localStorage.key(i));
         let modifiedKey = localStorage.key(i).split("_")[1]
         storageKeyList.push(modifiedKey);
     }
 }
-
 for (let i = 0; i < storageKeyList.length; i++) {
     coords = getLocal("_" + storageKeyList[i]).split(",");
     for (let j = 0; j < coords.length-1; j += 2) 
@@ -553,11 +617,11 @@ function updateArea(e) {
 
 // add markers to map
 let berryCount = 0;
-var berryArray = [];
 geojson.features.forEach(function(marker) {
     // create a DOM element for the marker
     var berryIcon = document.createElement('div');
     berryIcon.className = 'marker';
+    berryIcon.name = berryCount;
     berryIcon.style.backgroundImage = 'url(https://tric-static-bucket.s3.us-east-2.amazonaws.com/static/images/strawberry.png)';
     berryIcon.style.width = '30px';
     berryIcon.style.height = '30px';
@@ -579,30 +643,23 @@ geojson.features.forEach(function(marker) {
             + '<H4>Plant Number: '+ berryCount + ' </H4>' 
             + '<H4 style="font-size: 14px;">Latitude:' + marker.geometry.coordinates[0] + '</H4>'
             + '<H4 style="font-size: 14px;">Longitude:' + marker.geometry.coordinates[1] + '</H4>'
-            + '<H4 style="background-color: red;">Has Flowers? No</H4>'); 
-   
+            + '<H4 style="background-color: red;">Has Flowers? No</H4>');
 
     berryIcon.addEventListener('mousedown', function() {
-        let berryHTML = popup.getElement().innerHTML;
-        let arr = parseIconHTML(berryHTML);
-        for (let i = 0; i < arr.length; i++)
-            console.log(arr[i]);
-        favorites.push({'imageLink':arr[0], 'plantNum':arr[1], 'latitude':arr[2], 'longitude':arr[3], 'hasFlowers':arr[4]});
+        favorites.push(berryIcon.name);
     });
 
     berryIcon.addEventListener('mouseenter', function() {
-        berryIcon.style.zIndex = "2"; // Bring icon being hovered to front
+        berryIcon.style.zIndex = "1"; // Bring icon being hovered to front
         map.getCanvas().style.cursor = 'pointer'; // Change cursor to indicate response
-        popup
-            .addTo(map);
+        popup.addTo(map);
     });
 
     berryIcon.addEventListener('mouseleave', function() {
-        berryIcon.style.zIndex = "1"; // Put it back down
+        berryIcon.style.zIndex = "0"; // Put it back down
         map.getCanvas().style.cursor = '';
         popup.remove();
     });
-    berryArray.push(berryIcon);
     berryCount++;
 });
 
