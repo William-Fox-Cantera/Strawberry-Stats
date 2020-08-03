@@ -34,8 +34,10 @@ def remove_plant_index(request):
     user_meta = user.meta_list
     set_to_modify = request.GET.get('current_dataset', None)
     favorite_to_remove = request.GET.get('plant_index', None)
-    user_meta[set_to_modify][int(favorite_to_remove)].pop('is_favorited')
-    user_meta[set_to_modify][int(favorite_to_remove)].pop('notes')
+    if user_meta[set_to_modify][int(favorite_to_remove)]['is_favorited']:
+        user_meta[set_to_modify][int(favorite_to_remove)].pop('is_favorited')
+    if  user_meta[set_to_modify][int(favorite_to_remove)]['notes']:
+        user_meta[set_to_modify][int(favorite_to_remove)].pop('notes')
     user.save()
     return JsonResponse({})
 

@@ -99,6 +99,10 @@
         display: block;
     }
 
+    .marker:active {
+        cursor: url('https://tric-static-bucket.s3.us-east-2.amazonaws.com/media/asdf2/2020-07-20/3.jpg');
+    }
+
     .tips {
         text-decoration: none;
         color: white;
@@ -154,7 +158,7 @@
     #favorites {
         transform: translate(21%, 4%);
         width: 83%;
-        height: 91%;
+        height: 85%;
         overflow-y: scroll;
     }
 
@@ -201,6 +205,20 @@
         transform: translate(0%, 210%);
     }
 
+    #favorite-indices {
+        width: 20%;
+        height: 20%;
+        transform: translate(-50px, -350px);
+        overflow-y: scroll;
+    }
+
+    .saved-changes-text {
+        font-size: 18px; 
+        width: 300px; 
+        background-color:#f1f1f1; 
+        font-family: arial; 
+        transform: translate(0%, 280%);
+    }
 </style>
 
 <p class="current-dataset" id="current-data">Current Dataset &#8594 </p>
@@ -223,11 +241,21 @@
         <input id="plant-search-index" type="text" placeholder="Enter Plant #">
         <input id="plant-search-submit" type="submit" value="Search" onclick="goToPlant()">
     </div>
-    <p style="font-size: 18px; width: 300px; background-color:
-        #f1f1f1; font-family: arial; transform: translate(0%, 280%);">All changes saved automatically</p>
+    <p class="saved-changes-text">All changes saved automatically</p>
     <p style="position: absolute; top: 0;">Current Favorites</p>
-    <ul id="existing-favorites" style="transform: translate(0%, 280%);"></ul>
     <ul id="favorites"></ul>
+    <ul id="favorite-indices">
+        <p>Plant: 1</p>
+        <p>Plant: 2</p>
+        <p>Plant: 3</p>
+        <p>Plant: 3</p>
+        <p>Plant: 3</p>
+        <p>Plant: 3</p>
+        <p>Plant: 3</p>
+        <p>Plant: 3</p>
+        <p>Plant: 3</p>
+
+    </ul>
 </div>
 
 <div class="tab">
@@ -281,6 +309,7 @@ function goToPlant() {
 * Produces: Nothing
 */
 function sendToDB() {
+    console.log("HEY")
     for (let i = 0; i < favoritesStorage.length; i++) {
         indicesAndNotes[favoritesStorage[i]] = document.getElementById("note_" + favoritesStorage[i]).value;
     }
@@ -329,7 +358,6 @@ function switchTabs(event, tab) {
                 hasNoPlants = false;
             for (var i = 0; i < favorites.length; i++) { 
                 addFavoriteHTML(favorites[i], hasNoPlants, null);
-                let favsList = document.getElementById("existing-favorites").innerHTML += "<li>Plant: '" + favorites[i] + "'</li>";
                 hasNoPlants =  false;
             }
             favorites = []; // Remove from favorites once done so they don't get add more than once
@@ -393,20 +421,20 @@ function addFavoriteHTML(plantIndex, hasNoPlants, notes) {
     let newWidth = width/scaleReduce;
     let newHeight = height/scaleReduce;
     let imageHTML = "<img name='" + plantIndex + "' id='" + "image_" + plantIndex + "' src=\"https://tric-static-bucket.s3.us-east-2.amazonaws.com/media/" + 
-    meta_dict[plantIndex]['image'] + "\"" + " style=\"display: flex; width: " + newWidth + 'px' + "; height: " + newHeight 
+    meta_dict[plantIndex]['image'] + "\"" + " style=\"margin-bottom: -200px; width: " + newWidth + 'px' + "; height: " + newHeight 
     + 'px' + "; border: 1px solid black;\">";
     favoritesDiv.innerHTML += imageHTML;   
 
     let plantNumHTML = "<p name='" + plantIndex + "' style=\"display: table-row; width: 400px; height 200px; font-family: arial;\
-    font-size: 24px; transform: translate(770px, -440px);\">Plant Number: " + plantIndex + "</p>";
+    font-size: 24px; transform: translate(770px, -240px);\">Plant Number: " + plantIndex + "</p>";
     favoritesDiv.innerHTML += plantNumHTML; 
 
     let idHTML = "<p name='" + plantIndex + "' style=\"display: table-row; width: 400px; height 200px; font-family: arial;\
-    font-size: 24px; transform: translate(770px, -420px);\">Random ID: " + meta_dict[plantIndex]["plant_id"] + "</p>";
+    font-size: 24px; transform: translate(770px, -160px);\">Random ID: " + meta_dict[plantIndex]["plant_id"] + "</p>";
     favoritesDiv.innerHTML += idHTML; 
 
     let coordsHTML = "<p name='" + plantIndex + "' style=\"display: table-row; width: 400px; height 200px; font-family: arial;\
-    font-size: 16px; transform: translate(770px, -400px);\">Location: "
+    font-size: 16px; transform: translate(770px, -150px);\">Location: "
     + meta_dict[plantIndex]["updated_gps_lat"] + ", " + meta_dict[plantIndex]["updated_gps_lon"] + "</p>";
     favoritesDiv.innerHTML += coordsHTML; 
 
@@ -414,14 +442,14 @@ function addFavoriteHTML(plantIndex, hasNoPlants, notes) {
     if (notes != null) 
         appendEnd = notes + "</textarea></p>";
     let note = "<p name='" + plantIndex + "' style=\"display: table-row; width: 400px; height 200px; font-family: arial;\
-    font-size: 24px; transform: translate(770px, -550px);\">Notes: <textarea style=\"display: table-row; transform: translate(0px, 170px);\"\
+    font-size: 24px; transform: translate(770px, -300px);\">Notes: <textarea onblur='sendToDB()' style=\"display: table-row; transform: translate(0px, 170px);\"\
     rows='5' cols='24' type='text' id='" + "note_" + plantIndex + "'\
     placeholder='Enter Notes...'>" + appendEnd;
     favoritesDiv.innerHTML += note;
 
     let delButton = "<a name='" + plantIndex + "' id='" + "delete_" + plantIndex + "' class='btn btn-sm btn-danger'\
     style='display: table-row; width: 200px; height 200px; font-family: arial;\
-    font-size: 24px; transform: translate(770px, -330px);' onclick='removeFavorite(this.name)'>Remove</a>";
+    font-size: 24px; transform: translate(770px, -130px);' onclick='removeFavorite(this.name)'>Remove</a>";
     favoritesDiv.innerHTML += delButton;
 
     favoritesStorage.push(plantIndex); // The favorites array needs to be cleared but I still need those indices when saving
@@ -686,7 +714,8 @@ geojson.features.forEach(function(marker) {
         closeOnClick: false
     })
     .setLngLat(marker.geometry.coordinates)
-    .setHTML('<p><img src="' + marker.properties.image + '" style="max-height: 300; max-width: 300px;"></p>' // Add image to the popup
+    .setHTML(
+              '<p><img src="' + marker.properties.image + '" style="max-height: 300; max-width: 300px;"></p>' // Add image to the popup
             + '<H4>Plant Number: '+ berryCount + ' </H4>' 
             + '<H4 style="font-size: 14px;">Latitude:' + marker.geometry.coordinates[0] + '</H4>'
             + '<H4 style="font-size: 14px;">Longitude:' + marker.geometry.coordinates[1] + '</H4>'
