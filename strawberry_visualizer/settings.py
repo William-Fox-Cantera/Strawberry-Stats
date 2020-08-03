@@ -44,8 +44,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'plants.apps.PlantsConfig', # Used for signals 
     'django_filters',
-    'django_celery_results',
-    'celery_progress',
     'storages',
 ]
 
