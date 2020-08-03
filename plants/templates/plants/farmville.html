@@ -152,23 +152,10 @@
     }
 
     #favorites {
-        transform: translate(20%, 0%);
-        width: 90%;
-        height: 100%;
-      
+        transform: translate(21%, 4%);
+        width: 83%;
+        height: 91%;
         overflow-y: scroll;
-    }
-
-    .save {
-        vertical-align:middle; 
-        transform:translate(138%, 120%); 
-        width: 10vw; 
-        background-color: #f1f1f1;
-        border: 1px solid rgb(161, 158, 158);
-    }
-
-    .save:hover {
-        background-color: rgb(95, 91, 91);
     }
 
     select {
@@ -206,9 +193,14 @@
 
     .mapboxgl-popup-content {
         border: 2px solid violet;
-
         background-color: rgb(219, 210, 210);
+        width: 320px;
     }
+
+    .index-search {
+        transform: translate(0%, 210%);
+    }
+
 </style>
 
 <p class="current-dataset" id="current-data">Current Dataset &#8594 </p>
@@ -227,8 +219,15 @@
 </div>
 
 <div class="tabcontent" id="saved">
-    <a class="button save" onclick="sendToDB()"><span>save</span></a>
-    <ul id="favorites" class="favs"></ul>
+    <div class="index-search">
+        <input id="plant-search-index" type="text" placeholder="Enter Plant #">
+        <input id="plant-search-submit" type="submit" value="Search" onclick="goToPlant()">
+    </div>
+    <p style="font-size: 18px; width: 300px; background-color:
+        #f1f1f1; font-family: arial; transform: translate(0%, 280%);">All changes saved automatically</p>
+    <p style="position: absolute; top: 0;">Current Favorites</p>
+    <ul id="existing-favorites" style="transform: translate(0%, 280%);"></ul>
+    <ul id="favorites"></ul>
 </div>
 
 <div class="tab">
@@ -243,7 +242,7 @@
 </div>
 
 <div id="map"></div> <!-- The main map -->
-<div class="calculation-box">
+<div id="calc-box" class="calculation-box">
     <p>Highlight areas using the draw tool.</p>
     <div id="calculated-area" style="z-index: 1;"></div>
 </div>
@@ -256,6 +255,23 @@ var favorites = [];
 var favoritesStorage = [];
 var indicesAndNotes = {};
 var MAX_MESSAGES = 3;
+
+
+/*
+* goToPlant, 
+*
+* Consumes: Nothing
+* Produces: Nothing
+*/
+function goToPlant() {
+    let plantIndex = document.getElementById("plant-search-index").value;
+    let plantElement = document.getElementById("image_" + plantIndex);
+    if (plantElement === null) {
+        alert("No plant with this number has been favorited!")
+    } else {
+        plantElement.scrollIntoView();
+    }
+}
 
 
 /*
@@ -293,23 +309,49 @@ function sendToDB() {
 */
 function switchTabs(event, tab) {
         var map = document.getElementById("map");
+        var tabcontent = document.getElementsByClassName("tabcontent");
+        var calcBox = document.getElementById("calc-box");
+
         if (tab === "saved") {
             map.style.visibility = "hidden"; // Hides the map
+            calcBox.style.visibility = "hidden";
             document.getElementById(tab).style.display = "block";
             event.currentTarget.className += " active";
             tablinks = document.getElementsByClassName("tablinks");
-            for (i = 0; i < tablinks.length; i++)  // Stop the interactivity for the tab so it doesn't get stuck on dark grey
+            for (i = 0; i < tablinks.length; i++) // Stop the interactivity for the tab so it doesn't get stuck on dark grey
                 tablinks[i].className = tablinks[i].className.replace(" active", "");
+
             addExistingFavorites();
-            for (var i = 0; i < favorites.length; i++) 
-                addFavoriteHTML(favorites[i], null);
+            favorites.sort()
+            let hasNoPlants = true;
+            
+            if (document.querySelector('[id^="note_"]') != null)
+                hasNoPlants = false;
+            for (var i = 0; i < favorites.length; i++) { 
+                addFavoriteHTML(favorites[i], hasNoPlants, null);
+                let favsList = document.getElementById("existing-favorites").innerHTML += "<li>Plant: '" + favorites[i] + "'</li>";
+                hasNoPlants =  false;
+            }
             favorites = []; // Remove from favorites once done so they don't get add more than once
+            if (document.querySelector('[id^="note_"]') === null) {
+                console.log("ADDING NO IMAGE")
+                document.getElementById("favorites").innerHTML = "<p id='noPlantsMsg'\
+                style='transform:translate(30%, 100%); width: 40%; height: 30%; font-size: 36px;\
+                font-family: arial; background-color: #D5CFCE; border: 3px solid #000'>No plants currently favorited,\
+                click on an icon in the map to see it in more detail here.</p>"
+            } else {
+                sendToDB();
+            }
+            if (document.querySelector('[id^="note_"]') != null) {
+                let msg = document.getElementById("noPlantsMsg");
+                if (msg != null) msg.parentNode.removeChild(msg);
+            } 
         } else {
-            tabcontent = document.getElementsByClassName("tabcontent");
             for (i = 0; i < tabcontent.length; i++) {
                 tabcontent[i].style.display = "none";
             }
             map.style.visibility = "visible";
+            calcBox.style.visibility = "visible";
         }
 }
 
@@ -323,11 +365,11 @@ function switchTabs(event, tab) {
 */
 function addExistingFavorites() {
     if (!areFavoritesLoaded) {
+        let hasNoPlants = true;
         for (let i = 0; i < meta_dict.length; i++) {
             if (meta_dict[i]['is_favorited'] === 'True') {
-                console.log(meta_dict[i])
-                console.log(meta_dict[i]['notes'])
-                addFavoriteHTML(i, meta_dict[i]['notes']);
+                addFavoriteHTML(i, hasNoPlants,  meta_dict[i]['notes']);
+                hasNoPlants = false;
             }
         }
         areFavoritesLoaded = true;
@@ -338,30 +380,32 @@ function addExistingFavorites() {
 /*
 * addFavoriteHTML, adds the necessary html and styling for the given plant index.
 * 
-* Consumes: Nothing
+* Consumes: plantIndex -> number, the index of the plant
+*           hasNoPlants -> number, indicates the margin of the first element should be different
+*           notes -> text added by the user
 * Produces: Nothing
 */
-function addFavoriteHTML(plantIndex, notes) {
+function addFavoriteHTML(plantIndex, hasNoPlants, notes) {
     let favoritesDiv = document.getElementById("favorites");
     let width = 1920;
     let height = 1080;
     let scaleReduce = 2.5;
     let newWidth = width/scaleReduce;
     let newHeight = height/scaleReduce;
-    let imageHTML = "<img name=' " + plantIndex + " ' src=\"https://tric-static-bucket.s3.us-east-2.amazonaws.com/media/" + 
-    meta_dict[plantIndex]['image'] + "\"" + " style=\"width: " + newWidth + 'px' + "; height: " + newHeight 
-    + 'px' + "; border: 1px solid black; margin-top: 60px;\">";
+    let imageHTML = "<img name='" + plantIndex + "' id='" + "image_" + plantIndex + "' src=\"https://tric-static-bucket.s3.us-east-2.amazonaws.com/media/" + 
+    meta_dict[plantIndex]['image'] + "\"" + " style=\"display: flex; width: " + newWidth + 'px' + "; height: " + newHeight 
+    + 'px' + "; border: 1px solid black;\">";
     favoritesDiv.innerHTML += imageHTML;   
 
-    let plantNumHTML = "<p name=' " + plantIndex + " ' style=\"display: table-row; width: 400px; height 200px; font-family: arial;\
+    let plantNumHTML = "<p name='" + plantIndex + "' style=\"display: table-row; width: 400px; height 200px; font-family: arial;\
     font-size: 24px; transform: translate(770px, -440px);\">Plant Number: " + plantIndex + "</p>";
     favoritesDiv.innerHTML += plantNumHTML; 
 
-    let idHTML = "<p name=' " + plantIndex + " ' style=\"display: table-row; width: 400px; height 200px; font-family: arial;\
+    let idHTML = "<p name='" + plantIndex + "' style=\"display: table-row; width: 400px; height 200px; font-family: arial;\
     font-size: 24px; transform: translate(770px, -420px);\">Random ID: " + meta_dict[plantIndex]["plant_id"] + "</p>";
     favoritesDiv.innerHTML += idHTML; 
 
-    let coordsHTML = "<p name=' " + plantIndex + " ' style=\"display: table-row; width: 400px; height 200px; font-family: arial;\
+    let coordsHTML = "<p name='" + plantIndex + "' style=\"display: table-row; width: 400px; height 200px; font-family: arial;\
     font-size: 16px; transform: translate(770px, -400px);\">Location: "
     + meta_dict[plantIndex]["updated_gps_lat"] + ", " + meta_dict[plantIndex]["updated_gps_lon"] + "</p>";
     favoritesDiv.innerHTML += coordsHTML; 
@@ -369,13 +413,14 @@ function addFavoriteHTML(plantIndex, notes) {
     let appendEnd = "</textarea></p>";
     if (notes != null) 
         appendEnd = notes + "</textarea></p>";
-    let note = "<p name=' " + plantIndex + " ' style=\"display: table-row; width: 400px; height 200px; font-family: arial;\
+    let note = "<p name='" + plantIndex + "' style=\"display: table-row; width: 400px; height 200px; font-family: arial;\
     font-size: 24px; transform: translate(770px, -550px);\">Notes: <textarea style=\"display: table-row; transform: translate(0px, 170px);\"\
     rows='5' cols='24' type='text' id='" + "note_" + plantIndex + "'\
     placeholder='Enter Notes...'>" + appendEnd;
     favoritesDiv.innerHTML += note;
 
-    let delButton = "<a name=' " + plantIndex + " ' id='" + "delete_" + plantIndex + "' class='btn btn-sm btn-danger' style='display: table-row; width: 200px; height 200px; font-family: arial;\
+    let delButton = "<a name='" + plantIndex + "' id='" + "delete_" + plantIndex + "' class='btn btn-sm btn-danger'\
+    style='display: table-row; width: 200px; height 200px; font-family: arial;\
     font-size: 24px; transform: translate(770px, -330px);' onclick='removeFavorite(this.name)'>Remove</a>";
     favoritesDiv.innerHTML += delButton;
 
@@ -394,8 +439,10 @@ function removeFavorite(name) {
     let toRemove = document.getElementsByName(name);
     let parentNode = toRemove[0].parentNode;
     let length = toRemove.length;
-    for (let i = 0; i < length; i++)
-        parentNode.removeChild(toRemove[0]);    
+    for (let i = 0; i < length; i++) {
+        console.log(toRemove[0])
+        parentNode.removeChild(toRemove[0]);
+    }    
 
     // Remove from database
     $.ajax({
@@ -639,7 +686,7 @@ geojson.features.forEach(function(marker) {
         closeOnClick: false
     })
     .setLngLat(marker.geometry.coordinates)
-    .setHTML('<p><img src="' + marker.properties.image + '" style="max-height: 150; max-width: 150px;"></p>' // Add image to the popup
+    .setHTML('<p><img src="' + marker.properties.image + '" style="max-height: 300; max-width: 300px;"></p>' // Add image to the popup
             + '<H4>Plant Number: '+ berryCount + ' </H4>' 
             + '<H4 style="font-size: 14px;">Latitude:' + marker.geometry.coordinates[0] + '</H4>'
             + '<H4 style="font-size: 14px;">Longitude:' + marker.geometry.coordinates[1] + '</H4>'
