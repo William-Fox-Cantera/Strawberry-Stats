@@ -195,20 +195,14 @@
         font-family: arial;
     }
 
-    .mapboxgl-popup-content {
-        border: 2px solid violet;
-        background-color: rgb(219, 210, 210);
-        width: 320px;
-    }
-
     .index-search {
         transform: translate(0%, 210%);
     }
 
     #favorite-indices {
         width: 20%;
-        height: 20%;
-        transform: translate(-50px, -350px);
+        height: 61%;
+        transform: translate(-40px, -400px);
         overflow-y: scroll;
     }
 
@@ -218,6 +212,20 @@
         background-color:#f1f1f1; 
         font-family: arial; 
         transform: translate(0%, 280%);
+    }
+
+    .plant-popup .mapboxgl-popup-content {
+        border: 2px solid rgb(32, 32, 32);
+        background-color: rgb(219, 210, 210);
+        width: 320px;
+        
+    }
+
+    .save-popup .mapboxgl-popup-content {
+        background-color: black; 
+        font-size: 16px;
+        color: white;
+        font-family: arial;
     }
 </style>
 
@@ -244,18 +252,8 @@
     <p class="saved-changes-text">All changes saved automatically</p>
     <p style="position: absolute; top: 0;">Current Favorites</p>
     <ul id="favorites"></ul>
-    <ul id="favorite-indices">
-        <p>Plant: 1</p>
-        <p>Plant: 2</p>
-        <p>Plant: 3</p>
-        <p>Plant: 3</p>
-        <p>Plant: 3</p>
-        <p>Plant: 3</p>
-        <p>Plant: 3</p>
-        <p>Plant: 3</p>
-        <p>Plant: 3</p>
-
-    </ul>
+    <h3 id="curr-favs" style="transform: translate(0px, -400px);">Current Favorites</h3>
+    <ul id="favorite-indices"></ul>
 </div>
 
 <div class="tab">
@@ -283,6 +281,10 @@ var favorites = [];
 var favoritesStorage = [];
 var indicesAndNotes = {};
 var MAX_MESSAGES = 3;
+var noPlantsMsg = "<p id='noPlantsMsg'\
+                    style='transform:translate(30%, 100%); width: 40%; height: 35%; font-size: 36px;\
+                    font-family: arial; background-color: #D5CFCE; border: 3px solid #000'>No plants currently favorited,\
+                    click on an icon in the map to see it in more detail here.</p>";
 
 
 /*
@@ -349,28 +351,10 @@ function switchTabs(event, tab) {
             tablinks = document.getElementsByClassName("tablinks");
             for (i = 0; i < tablinks.length; i++) // Stop the interactivity for the tab so it doesn't get stuck on dark grey
                 tablinks[i].className = tablinks[i].className.replace(" active", "");
-
             addExistingFavorites();
-            favorites.sort()
-            let hasNoPlants = true;
-            
-            if (document.querySelector('[id^="note_"]') != null)
-                hasNoPlants = false;
-            for (var i = 0; i < favorites.length; i++) { 
-                addFavoriteHTML(favorites[i], hasNoPlants, null);
-                hasNoPlants =  false;
-            }
-            favorites = []; // Remove from favorites once done so they don't get add more than once
             if (document.querySelector('[id^="note_"]') === null) {
-                console.log("ADDING NO IMAGE")
-                document.getElementById("favorites").innerHTML = "<p id='noPlantsMsg'\
-                style='transform:translate(30%, 100%); width: 40%; height: 30%; font-size: 36px;\
-                font-family: arial; background-color: #D5CFCE; border: 3px solid #000'>No plants currently favorited,\
-                click on an icon in the map to see it in more detail here.</p>"
+                document.getElementById("favorites").innerHTML = noPlantsMsg;
             } else {
-                sendToDB();
-            }
-            if (document.querySelector('[id^="note_"]') != null) {
                 let msg = document.getElementById("noPlantsMsg");
                 if (msg != null) msg.parentNode.removeChild(msg);
             } 
@@ -381,6 +365,23 @@ function switchTabs(event, tab) {
             map.style.visibility = "visible";
             calcBox.style.visibility = "visible";
         }
+}
+
+
+
+function addContent() {
+    favorites.sort()
+    let hasNoPlants = true;
+    
+    if (document.querySelector('[id^="note_"]') != null)
+        hasNoPlants = false;
+    for (var i = 0; i < favorites.length; i++) { 
+        addFavoriteHTML(favorites[i], hasNoPlants, null);
+        document.getElementById("favorite-indices").innerHTML += "<p id='ezList_"+ favorites[i] +"' style='font-size: 16px;'>Plant " + favorites[i] + "</p>";
+        hasNoPlants =  false;
+    }
+    favorites = []; // Remove from favorites once done so they don't get add more than once
+    sendToDB();
 }
 
 
@@ -397,6 +398,7 @@ function addExistingFavorites() {
         for (let i = 0; i < meta_dict.length; i++) {
             if (meta_dict[i]['is_favorited'] === 'True') {
                 addFavoriteHTML(i, hasNoPlants,  meta_dict[i]['notes']);
+                document.getElementById("favorite-indices").innerHTML += "<p id='ezList_"+ i +"' style='font-size: 16px;'>Plant: " + i + "</p>";
                 hasNoPlants = false;
             }
         }
@@ -471,6 +473,10 @@ function removeFavorite(name) {
         console.log(toRemove[0])
         parentNode.removeChild(toRemove[0]);
     }    
+    console.log(name)
+    document.getElementById("ezList_"+name).remove();
+    // Display message if no images remain
+    if (document.querySelector('[id^="note_"]') === null) document.getElementById("favorites").innerHTML = noPlantsMsg;
 
     // Remove from database
     $.ajax({
@@ -710,6 +716,7 @@ geojson.features.forEach(function(marker) {
 
     // Make popup, not added to map yet
     var popup = new mapboxgl.Popup({
+        className: "plant-popup",
         closeButton: false,
         closeOnClick: false
     })
@@ -721,8 +728,25 @@ geojson.features.forEach(function(marker) {
             + '<H4 style="font-size: 14px;">Longitude:' + marker.geometry.coordinates[1] + '</H4>'
             + '<H4 style="background-color: red;">Has Flowers? No</H4>');
 
+
+    var savePopup = new mapboxgl.Popup({
+        className: "save-popup",
+        closeButton: false,
+        closeOnClick: false
+    })
+    .setLngLat(marker.geometry.coordinates)
+    .setHTML( '<p">Saved</p>'
+    );
+
     berryIcon.addEventListener('mousedown', function() {
         favorites.push(berryIcon.name);
+        addContent();
+        savePopup.addTo(map);
+    });
+
+    berryIcon.addEventListener('mouseup', function () {
+        setTimeout(function(){ savePopup.remove(); }, 800);
+        
     });
 
     berryIcon.addEventListener('mouseenter', function() {
