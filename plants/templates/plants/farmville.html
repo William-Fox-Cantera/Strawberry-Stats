@@ -751,7 +751,7 @@ geojson.features.forEach(function(marker) {
 
     berryIcon.addEventListener('mouseenter', function() {
         berryIcon.style.zIndex = "1"; // Bring icon being hovered to front
-        map.getCanvas().style.cursor = 'pointer'; // Change cursor to indicate response
+        map.getCanvas().style.cursor = 'crosshair'; // Change cursor to indicate response
         popup.addTo(map);
     });
 

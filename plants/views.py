@@ -103,7 +103,8 @@ def zip_upload(request, destination="start"):
                                                     'customer':customer, 'upload_names':files })
     elif destination == "farmville":
         meta = customer.meta_list
-        return render(request, "plants/farmville.html", {"meta":meta, 'upload_names':files})
+        return render(request, "plants/farmville.html", {"meta":meta, 'upload_names':files, 'date_captured':"6/16/2020",
+                                                         "percent_flowered":"50%", "total_plants":"8"})
     elif destination == "upload":
         if request.method == 'POST':
             upload_name = ""
@@ -119,7 +120,7 @@ def zip_upload(request, destination="start"):
                 user_upload = request.user.customer.user_file_upload
                 upload_images(request, upload_name)
                 files.append(upload_name)
-                return render(request, 'plants/user.html', { 'form':form, 'should_generate':True, 
+                return render(request, 'plants/user.html', { 'form':form, 'should_generate':True, 'date_captured':"6/16/2020",
                                                              'customer':customer, 'upload_names':files })
             else:
                 messages.error(request, "Please upload a file ending with \".zip\"")
