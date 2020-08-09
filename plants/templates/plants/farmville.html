@@ -190,7 +190,7 @@
     }
 
     .current-dataset {
-        transform:translate(19.5%, 49%);
+        transform:translate(19.5%, 10%);
         font-size: 28px;
         font-family: arial;
     }
@@ -218,7 +218,6 @@
         border: 2px solid rgb(32, 32, 32);
         background-color: rgb(219, 210, 210);
         width: 320px;
-        
     }
 
     .save-popup .mapboxgl-popup-content {
@@ -226,6 +225,25 @@
         font-size: 16px;
         color: white;
         font-family: arial;
+    }
+
+    .areaform-popup .mapboxgl-popup-content {
+        background-color: #beb4b4;
+        height: 500px; 
+        width: 500px;
+    }
+
+    .enable {
+        position: absolute;
+        cursor: pointer;
+        height: 50px;
+        width: 300px;
+        left: 50%;
+        bottom: 30px;
+        transform: translate3d(-10%, -180%, 0);
+        font-size: 20px;
+        background: white;
+        box-shadow: 0 0 3px 1px rgba(0, 0, 0, 0.5);
     }
 </style>
 
@@ -268,11 +286,12 @@
 </div>
 
 <div id="map"></div> <!-- The main map -->
+<button class="enable">Highlight Area</button>
+  
 <div id="calc-box" class="calculation-box">
     <p>Highlight areas using the draw tool.</p>
     <div id="calculated-area" style="z-index: 1;"></div>
 </div>
-<p id="userShapeComment"></p>
 
 <script type="text/javascript">
 var tipIndex = 0;
@@ -311,7 +330,6 @@ function goToPlant() {
 * Produces: Nothing
 */
 function sendToDB() {
-    console.log("HEY")
     for (let i = 0; i < favoritesStorage.length; i++) {
         indicesAndNotes[favoritesStorage[i]] = document.getElementById("note_" + favoritesStorage[i]).value;
     }
@@ -368,8 +386,12 @@ function switchTabs(event, tab) {
 }
 
 
-
-function addContent() {
+/*
+* appendFavorites, adds to the inner html of the list of favorite iondices for easier viewing for the user.
+* Consumes: Nothing
+* Produces: Nothing
+*/
+function appendFavorites() {
     favorites.sort()
     let hasNoPlants = true;
     
@@ -422,6 +444,7 @@ function addFavoriteHTML(plantIndex, hasNoPlants, notes) {
     let scaleReduce = 2.5;
     let newWidth = width/scaleReduce;
     let newHeight = height/scaleReduce;
+    console.log("INDEX: " + plantIndex)
     let imageHTML = "<img name='" + plantIndex + "' id='" + "image_" + plantIndex + "' src=\"https://tric-static-bucket.s3.us-east-2.amazonaws.com/media/" + 
     meta_dict[plantIndex]['image'] + "\"" + " style=\"margin-bottom: -200px; width: " + newWidth + 'px' + "; height: " + newHeight 
     + 'px' + "; border: 1px solid black;\">";
@@ -470,10 +493,8 @@ function removeFavorite(name) {
     let parentNode = toRemove[0].parentNode;
     let length = toRemove.length;
     for (let i = 0; i < length; i++) {
-        console.log(toRemove[0])
         parentNode.removeChild(toRemove[0]);
     }    
-    console.log(name)
     document.getElementById("ezList_"+name).remove();
     // Display message if no images remain
     if (document.querySelector('[id^="note_"]') === null) document.getElementById("favorites").innerHTML = noPlantsMsg;
@@ -553,6 +574,8 @@ function saveLocal(key, value) {
 function getLocal(value) {
     return localStorage.getItem(meta_id + value);
 }
+
+
 //-----------------------------------------------------------------------------------------------------------------------------------------
 // MAPBOX STUFF
 mapboxgl.accessToken = 'pk.eyJ1Ijoid2lsbGlhbWZveCIsImEiOiJja2JzY3V0dTcwMGJ6MnZzYWF2cjRsNXYwIn0.fbOk4CcYFDOMA_nG9JCauA';
@@ -563,7 +586,6 @@ var optionList = document.getElementsByTagName("option");
 var currentData = localStorage.getItem("currentDataset");
 
 var meta_id = currentData === null ? select[1].text : currentData; // Default to first available set
-console.log(meta_id)
 var meta_dict = meta[meta_id];
 var currentDataLabel = document.getElementById("current-data");
 currentDataLabel.innerHTML += meta_id;
@@ -600,6 +622,7 @@ for (let i = 0; i < meta_dict.length; i++) {
     geojson['features'].push(feature);
 }
 
+// The main map instance for mapbox gl js, provides methods from the api
 var map = new mapboxgl.Map({
 container: 'map',
     style: 'mapbox://styles/mapbox/streets-v11',
@@ -607,20 +630,139 @@ container: 'map',
     zoom: 15
 });
 
+
+// add markers to map
+var berryCount = 0;
+var berryList = [];
+
+/*
+* addIcons, adds a marker for mapbox gl js for each strawberry plant. This icon can be hovered over to see additional information
+*           such as plant index, an image, and more. Clicking on the icon itself allows the user to savee that plant and its info
+*           for later in the saved tab. This functiom is called to refresh the icons upon creating a rectangle with the highlight
+*           tool so the lat and lon coordinates of each marker stay updated.
+*
+* Consumes: iconSize -> String, the size the icon should be for width, height
+* Produces: Nothing
+*/
+function addIcons (iconSize) {
+    berryList = [];
+    geojson.features.forEach(function(marker) {
+        // create a DOM element for the marker
+        var berryIcon = document.createElement('div');
+        berryIcon.className = 'marker';
+        berryIcon.name = berryCount;
+        berryIcon.id = 'icon_' + berryCount;
+        berryIcon.style.backgroundImage = 'url(https://tric-static-bucket.s3.us-east-2.amazonaws.com/static/images/strawberry.png)';
+        berryIcon.style.width = iconSize;
+        berryIcon.style.height = iconSize;
+        berryIcon.style.backgroundColor = 'rgba(0,255,0,.1)';
+        berryIcon.style.borderRadius = '5px';
+
+        // add marker to map
+        var berryMarker = new mapboxgl.Marker(berryIcon)
+        .setLngLat(marker.geometry.coordinates)
+        .addTo(map);
+
+        // Make popup, not added to map yet
+        var popup = new mapboxgl.Popup({
+            className: "plant-popup",
+            closeButton: false,
+            closeOnClick: false
+        })
+        .setLngLat(marker.geometry.coordinates)
+        .setHTML(
+                '<p><img src="' + marker.properties.image + '" style="max-height: 300; max-width: 300px;"></p>' // Add image to the popup
+                + '<H4>Plant Number: '+ berryCount + ' </H4>' 
+                + '<H4 style="font-size: 14px;">Latitude:' + marker.geometry.coordinates[0] + '</H4>'
+                + '<H4 style="font-size: 14px;">Longitude:' + marker.geometry.coordinates[1] + '</H4>'
+                + '<H4 style="background-color: red;">Has Flowers? No</H4>');
+
+
+        var savePopup = new mapboxgl.Popup({
+            className: "save-popup",
+            closeButton: false,
+            closeOnClick: false
+        })
+        .setLngLat(marker.geometry.coordinates)
+        .setHTML( '<p">Saved</p>'
+        );
+        berryIcon.addEventListener('mousedown', function() {
+            favorites.push(berryIcon.name);
+            appendFavorites();
+            savePopup.addTo(map);
+        });
+
+        berryIcon.addEventListener('mouseup', function () {
+            setTimeout(function(){ savePopup.remove(); }, 800);
+            
+        });
+
+        berryIcon.addEventListener('mouseenter', function() {
+            berryIcon.style.zIndex = "1"; // Bring icon being hovered to front
+            map.getCanvas().style.cursor = 'crosshair'; // Change cursor to indicate response
+            popup.addTo(map);
+        });
+
+        berryIcon.addEventListener('mouseleave', function() {
+            berryIcon.style.zIndex = "0"; // Put it back down
+            map.getCanvas().style.cursor = '';
+            popup.remove();
+        });
+        berryList.push(map.project([berryMarker._lngLat.lng, berryMarker._lngLat.lat]));
+        berryCount++;
+    });
+}
+
+
+addIcons("30px"); // Add them on page load for the first time
+function updateIconSize() {
+    if (map.getZoom() > 21.5) {
+        sizeUpdater("15px");
+    } else {
+        sizeUpdater("30px");
+    }
+}
+
+
+/*
+* sizeUpdater, updates the size of the marker elements. So the strawberry icons. 
+*
+* Consumes: size -> String, the size (height, width) in pixels the icons should be set to. 
+* Produces: Nothing
+*/
+function sizeUpdater(size) {
+    let docElement = document.getElementsByClassName("marker");
+    for (let i = 0; i < docElement.length; i++) {
+        docElement[i].style.width = size;
+        docElement[i].style.height = size;
+    }
+}
+
+
+//----------------------------------------------------------------------------------------------------------------------------------------
+// AREA HIGHLIGHTING
+
+// Mapbox gl js draw setup
 var draw = new MapboxDraw({
     displayControlsDefault: false,
-    controls: {
-        polygon: true,
-        trash: true
-    }
+    modes: {
+        ...MapboxDraw.modes,
+        'draw_rectangle_drag': mapboxGLDrawRectangleDrag
+  }
 });
 
-map.addControl(draw);
-map.on('draw.create', updateArea);
-map.on('draw.delete', updateArea);
-map.on('draw.update', updateArea);
-map.on('draw.selectionchange', updateArea);
-map.on('zoom', updateIconSize)
+const nav = new mapboxgl.NavigationControl({
+  showCompass: false
+});
+
+map.addControl(nav, 'top-right');
+map.addControl(draw, 'top-right');
+
+document
+  .querySelector('.enable')
+  .addEventListener('click', () => {
+    draw.changeMode('draw_rectangle_drag');
+  });
 
 var geojsonFormat = {
     "type": "Feature",
@@ -637,12 +779,21 @@ var geojsonFormat = {
     }
 };
 
+var cursorCoords;
+var mouseButton;
+map.on('draw.create', updateArea);
+map.on('draw.delete', updateArea);
+map.on('draw.update', updateArea);
+map.on('draw.selectionchange', updateArea);
+map.on('zoom', updateIconSize)
+map.on('mousedown', e => { cursorCoords = e.point; console.log(e.point); });
+document.addEventListener('mousedown', (e) => { mouseButton = e.button; });
+
 
 // For getting the coordinates of each shape in the current session
 var storageKeyList = [];
 for ( var i = 0, len = localStorage.length; i < len; ++i ) {
     if (localStorage.key(i).includes(meta_id + "_")) {
-        console.log(localStorage.key(i));
         let modifiedKey = localStorage.key(i).split("_")[1]
         storageKeyList.push(modifiedKey);
     }
@@ -657,6 +808,23 @@ for (let i = 0; i < storageKeyList.length; i++) {
 
 
 /*
+* updateLatLon, updates the latitude and longitude of the berry icons based on new zoom level.
+*               Gets called after a new shape is added. Binding this to the zoom event proved to 
+*               be very slow.
+* 
+* Consumes: Nothing
+* Produces: Nothing
+*/
+function updateLatLon() {
+    berryList = [];
+    favorites = [];
+    berryCount = 0;
+    let size = map.getZoom() > 21.5 ? "15px" : "30px";
+    addIcons(size);
+}
+
+
+/*
  * updateArea, gets the area in square meters made with polygonson the map. Also save the polygons
  *             coordinates in local storage.
  *
@@ -664,13 +832,18 @@ for (let i = 0; i < storageKeyList.length; i++) {
  * Produces: Nothing
 */
 function updateArea(e) {
+    if (e.type === 'draw.selectionchange' && draw.getSelected().features.length && mouseButton === 0) { // 0 for left mouse button
+        updateLatLon();
+        let gpsCoords = draw.getSelected().features[0].geometry.coordinates[0];
+        let topLeft = map.project([gpsCoords[0][0], gpsCoords[0][1]]);
+        let bottomRight = map.project([gpsCoords[2][0], gpsCoords[2][1]]);
+        generateInfoForm([topLeft, bottomRight]);
+    }
+    if (e.type === 'draw.selectionchange' && mouseButton == 2) { // 2 is for right mouse button
+        draw.trash()
+    }
     let data = draw.getAll();
     var answer = document.getElementById('calculated-area');
-    console.log(e)
-    if (e.type === "draw.selectionchange") {
-        let userShapeComment = document.getElementById("userShapeComment");
-        userShapeComment.innerHTML = userAreaComment;
-    }
     if (e.type === "draw.delete") {
         draw.delete(e.features[0].id);
         if (e.features[0].geometry.coordinates[0].includes(e.features[0].geometry.coordinates[0][0])) {
@@ -679,7 +852,6 @@ function updateArea(e) {
     }
     if (e.type === "draw.create") {
         saveLocal("_" + e.features[0].geometry.coordinates[0][0], e.features[0].geometry.coordinates);
-        var userAreaComment = window.prompt("Enter a comment about this area:");
     }
     if (data.features.length > 0) {
         var area = turf.area(data);
@@ -695,91 +867,41 @@ function updateArea(e) {
 }
 
 
+//-----------------------------------------------------------------------------------------------------------------------------------------
+// Area Form 
 
-// add markers to map
-let berryCount = 0;
-geojson.features.forEach(function(marker) {
-    // create a DOM element for the marker
-    var berryIcon = document.createElement('div');
-    berryIcon.className = 'marker';
-    berryIcon.name = berryCount;
-    berryIcon.style.backgroundImage = 'url(https://tric-static-bucket.s3.us-east-2.amazonaws.com/static/images/strawberry.png)';
-    berryIcon.style.width = '30px';
-    berryIcon.style.height = '30px';
-    berryIcon.style.backgroundColor = 'rgba(0,255,0,.1)';
-    berryIcon.style.borderRadius = '5px';
-
-    // add marker to map
-    var berryMarker = new mapboxgl.Marker(berryIcon)
-    .setLngLat(marker.geometry.coordinates)
-    .addTo(map);
-
-    // Make popup, not added to map yet
-    var popup = new mapboxgl.Popup({
-        className: "plant-popup",
-        closeButton: false,
-        closeOnClick: false
+/*
+* generateInfoForm, when an area highlighted by the user is clicked, this function displays a popup with a form to 
+*                   fill out about the details of that area. Like the soil type, and the family of the plants.
+*
+* Consumes: Nothing
+* Produces: Nothing
+*/
+function generateInfoForm(selectedPolygon) {
+    let plantsInside = [];
+    console.log(selectedPolygon)
+    for (let i = 0; i < berryList.length; i++) { // Checking to see if plant is inside shaded rectangle
+        console.log(berryList[i])
+        if (berryList[i].x > selectedPolygon[0].x && berryList[i].y > selectedPolygon[0].y 
+        && berryList[i].x < selectedPolygon[1].x && berryList[i].y < selectedPolygon[1].y) {
+            console.log("IN")
+        }
+    }
+    var areaFormPopup = new mapboxgl.Popup({
+        className: "areaform-popup",
+        closeButton: true,
+        closeOnClick: true
     })
-    .setLngLat(marker.geometry.coordinates)
-    .setHTML(
-              '<p><img src="' + marker.properties.image + '" style="max-height: 300; max-width: 300px;"></p>' // Add image to the popup
-            + '<H4>Plant Number: '+ berryCount + ' </H4>' 
-            + '<H4 style="font-size: 14px;">Latitude:' + marker.geometry.coordinates[0] + '</H4>'
-            + '<H4 style="font-size: 14px;">Longitude:' + marker.geometry.coordinates[1] + '</H4>'
-            + '<H4 style="background-color: red;">Has Flowers? No</H4>');
-
-
-    var savePopup = new mapboxgl.Popup({
-        className: "save-popup",
-        closeButton: false,
-        closeOnClick: false
-    })
-    .setLngLat(marker.geometry.coordinates)
-    .setHTML( '<p">Saved</p>'
+    .setLngLat(map.unproject([cursorCoords['x'], cursorCoords['y']]))
+    .setHTML(   '<p>This is the form</p>' 
+              + '<p>Soil Type: </p>'
+              + '<input placeholder="enter type">'
+              + '<button style="position: absolute; margin: 50% 0% 50% 0%;">Save</button>'
     );
-
-    berryIcon.addEventListener('mousedown', function() {
-        favorites.push(berryIcon.name);
-        addContent();
-        savePopup.addTo(map);
-    });
-
-    berryIcon.addEventListener('mouseup', function () {
-        setTimeout(function(){ savePopup.remove(); }, 800);
-        
-    });
-
-    berryIcon.addEventListener('mouseenter', function() {
-        berryIcon.style.zIndex = "1"; // Bring icon being hovered to front
-        map.getCanvas().style.cursor = 'crosshair'; // Change cursor to indicate response
-        popup.addTo(map);
-    });
-
-    berryIcon.addEventListener('mouseleave', function() {
-        berryIcon.style.zIndex = "0"; // Put it back down
-        map.getCanvas().style.cursor = '';
-        popup.remove();
-    });
-    berryCount++;
-});
-
-
-function updateIconSize() {
-    if (map.getZoom() > 21.5) {
-        sizeUpdater("15px");
-    } 
-    if (map.getZoom() < 21.5) {
-        sizeUpdater("30px");
-    }
+    areaFormPopup.addTo(map);
 }
 
-function sizeUpdater(size) {
-    let docElement = document.getElementsByClassName("marker");
-    for (let i = 0; i < docElement.length; i++) {
-        docElement[i].style.width = size;
-        docElement[i].style.height = size;
-    }
-}
+
 </script>
 
 {% endblock content %}

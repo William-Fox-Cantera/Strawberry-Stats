@@ -7,6 +7,7 @@ urlpatterns = [
     # AJAX
     url(r'^ajax/save_favorite_plants/$', views.save_favorite_plants, name='save_favorite_plants'),
     url(r'^ajax/remove_plant_index/$', views.remove_plant_index, name='remove_plant_index'),
+    url(r'^ajax/save_drawn_coordinates/$', views.save_drawn_coordinates, name="save_drawn_coordinates"),
 
     # Login/Registration
     path('register/', views.registerPage, name="register"),

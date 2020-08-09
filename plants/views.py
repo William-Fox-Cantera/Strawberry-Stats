@@ -23,10 +23,29 @@ from django.http import JsonResponse
 
 
 """
+save_drawn_coordinates, saves coordinates the user made in highlighting areas on the map.
+
+Consumes: request, the html request
+Produces: Nothing
+"""
+def save_drawn_coordinates(request):
+    user = request.user.customer
+    drawn_shape_coords = user.custom_shapes
+    coord_id = request.GET.get('coord_id', None)
+    shape_coords = request.GET.get('area_coords', None)
+    set_to_modify = request.GET.get('current_dataset', None)
+    drawn_shape_coords[set_to_modify][str(coord_id)] = shape_coords
+
+
+    user.save()
+    return JsonResponse({})
+
+
+"""
 remove_plant_index, removes the is_favorited and notes attributes from the given index in the users meta_list.
                     This way, it won't be rendered next time the user goes to the page.
 
-Consumes: Nothing
+Consumes: request, the html request
 Produces: Nothing
 """
 def remove_plant_index(request):
