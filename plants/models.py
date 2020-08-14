@@ -24,41 +24,20 @@ class Customer(models.Model):
                                     null=True, 
                                     blank=True)
     date_created = models.DateTimeField(auto_now_add=True, null=True)
-    user_file_upload = models.FileField(upload_to=get_csv_path, 
+    file_upload = models.FileField(upload_to=get_csv_path, 
                                         storage=PrivateMediaStorage(), 
                                         null=True, 
                                         blank=True)
     meta_list = JSONField(null=True, default=dict)
-
-
-    """
-    __str__: Method to enumerate the class, especially in the database.
-    """
-    def __str__(self):
-        return self.name or ''
-
-
-class Tag(models.Model):
-    name = models.CharField(max_length=200, null=True) 
-    
-    """
-    __str__: Method to enumerate the class, especially in the database.
-    """
-    def __str__(self):
-        return self.name or ''
-
-
-class Product(models.Model):
-    CATEGORY = (
-        ('Indoor', 'Indoor'),
-        ("Out Door", 'Out Door'),
+    area_info_forms = JSONField(null=True, default=dict)
+    date_collected = models.DateTimeField(auto_now_add=False, null=True)
+    FIELD1 = 'Fifer'
+    FIELD2 = 'Camden'
+    FIELDS = (
+        (FIELD1, 'Fifer'),
+        (FIELD2, 'Camden')
     )
-    name = models.CharField(max_length=200, null=True)
-    price = models.FloatField(null=True)
-    category = models.CharField(max_length=200, null=True, choices=CATEGORY)
-    description = models.CharField(max_length=200, null=True, blank=True)
-    date_created = models.DateTimeField(auto_now_add=True, null=True)
-    tags = models.ManyToManyField(Tag)
+    field_id = models.CharField(max_length=200, choices=FIELDS, default=FIELD1) 
 
     """
     __str__: Method to enumerate the class, especially in the database.
@@ -66,19 +45,3 @@ class Product(models.Model):
     def __str__(self):
         return self.name or ''
 
-
-class Order(models.Model):
-    STATUS = (
-        ('Pending', 'Pending'),
-        ('Out for delivery', 'Out for delivery'),
-        ('Delivered', 'Delivered'),
-    )
-    # SET_NULL makes it so the order won't be deleted if the customer is deleted for whatever reason
-    customer = models.ForeignKey(Customer, null=True, on_delete=models.SET_NULL)
-    product = models.ForeignKey(Product, null=True, on_delete=models.SET_NULL)
-    date_created = models.DateTimeField(auto_now_add=True, null=True)
-    status = models.CharField(max_length=200, null=True, choices=STATUS)
-    note = models.CharField(max_length=200, null=True)
-
-    def __str__(self):
-        return self.product.name or ''

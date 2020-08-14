@@ -2,8 +2,7 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.forms import inlineformset_factory
 from .models import *
-from .forms import OrderForm, CreateUserForm, CustomerForm, CustomerFileUploadForm
-from .filters import OrderFilter
+from .forms import CreateUserForm, CustomerForm, CustomerFileUploadForm
 from .decorators import unauthenticated_user, allowed_users, admin_only
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import authenticate, login, logout
@@ -22,22 +21,19 @@ from .models import Customer
 from django.http import JsonResponse
 
 
-"""
-save_drawn_coordinates, saves coordinates the user made in highlighting areas on the map.
 
-Consumes: request, the html request
-Produces: Nothing
-"""
-def save_drawn_coordinates(request):
-    user = request.user.customer
-    drawn_shape_coords = user.custom_shapes
-    coord_id = request.GET.get('coord_id', None)
-    shape_coords = request.GET.get('area_coords', None)
+def get_area_form(request):
+    print(request.user.customer.area_info_forms)
+    return JsonResponse({"area_form":request.user.customer.area_info_forms})
+
+def saveAreaForm(request):
     set_to_modify = request.GET.get('current_dataset', None)
-    drawn_shape_coords[set_to_modify][str(coord_id)] = shape_coords
-
-
-    user.save()
+    name = request.GET.get("area_name", None)
+    soil_type = request.GET.get("soil_type", None)
+    user = request.user.customer
+    area_form = user.area_info_forms
+    area_form[set_to_modify] = {name:{"soil_type":soil_type}}
+    user.save()    
     return JsonResponse({})
 
 
@@ -111,8 +107,8 @@ zip_upload, this function renders the user page for uploading a csv file into th
 :param request: the html request from the template user.html
 :param destination: string, what action the function should take
 """
-@login_required(login_url='login')
-@allowed_users(allowed_roles=['customer'])
+#@login_required(login_url='login')
+#@allowed_users(allowed_roles=['customer'])
 def zip_upload(request, destination="start"):
     customer = request.user.customer
     files = [ k for k, v in customer.meta_list.items() ]
@@ -136,7 +132,7 @@ def zip_upload(request, destination="start"):
             if form.is_valid() and upload_name.endswith(".zip"):
                 messages.success(request, upload_name + " Successfully Uploaded")
                 upload = form.save()
-                user_upload = request.user.customer.user_file_upload
+                user_upload = request.user.customer.file_upload
                 upload_images(request, upload_name)
                 files.append(upload_name)
                 return render(request, 'plants/user.html', { 'form':form, 'should_generate':True, 'date_captured':"6/16/2020",
@@ -165,7 +161,7 @@ def upload_images(request, upload_name):
     media_storage = PublicMediaStorage()
     meta_list = []
     customer = request.user.customer
-    with ZipFile(customer.user_file_upload, 'r') as zipfile:
+    with ZipFile(customer.file_upload, 'r') as zipfile:
         zipfile.extractall()
         i = 1
         file_list = zipfile.namelist()
@@ -186,7 +182,7 @@ def upload_images(request, upload_name):
                 i += 1
         customer.meta_list[upload_name] = meta_list
         customer.save() # add the list of dictionaries to the database
-        customer.user_file_upload.delete(save=False) # removes from postgresql, s3
+        customer.file_upload.delete(save=False) # removes from postgresql, s3
 
 
 """
@@ -261,7 +257,7 @@ def home(request):
     'total_orders': total_orders, 'delivered':delivered,
     'pending':pending }
     
-    return render(request, "plants/dashboard.html", context)
+    return render(request, "plants/user.html", context)
 
 
 @login_required(login_url='login')
@@ -279,12 +275,6 @@ def accountSettings(request):
     return render(request, 'plants/account_settings.html', context)
 
 
-@login_required(login_url='login')
-@allowed_users(allowed_roles=['admin'])
-def products(request):
-    products = Product.objects.all()
-    return render(request, "plants/products.html", {'products': products })
-
 
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
@@ -301,46 +291,3 @@ def customer(request, pk):
     return render(request, "plants/customer.html", context)
 
 
-@login_required(login_url='login')
-@allowed_users(allowed_roles=['admin'])
-def createOrder(request, pk):
-    OrderFormSet = inlineformset_factory(Customer, Order, fields=('product', 'status'), extra=10)
-    customer = Customer.objects.get(id=pk)
-    formset = OrderFormSet(queryset=Order.objects.none(), instance=customer)
-    
-    if request.method == 'POST':
-        formset = OrderFormSet(request.POST, instance=customer)
-        if formset.is_valid():
-            formset.save() # Saves into database
-            return redirect('/') # Sends user back to dashboard
-
-    context = {'formset':formset}
-    return render(request, 'plants/order_form.html', context)
-
-
-@login_required(login_url='login')
-@allowed_users(allowed_roles=['admin'])
-def updateOrder(request, pk):
-    order = Order.objects.get(id=pk)
-    form = OrderForm(instance=order)
-
-    if request.method == 'POST':
-        form = OrderForm(request.POST, instance=order)
-        if form.is_valid():
-            form.save() # Saves into database
-            return redirect('/') # Sends user back to dashboard
-    
-    context = {'form':form}
-    return render(request, 'plants/order_form.html', context)
-
-
-@login_required(login_url='login')
-@allowed_users(allowed_roles=['admin'])
-def deleteOrder(request, pk):
-    order = Order.objects.get(id=pk)
-    if request.method == "POST":
-        order.delete()
-        return redirect('/')
-
-    context = {'item':order}
-    return render(request, 'plants/delete.html', context)

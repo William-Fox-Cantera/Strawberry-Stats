@@ -9,7 +9,7 @@ class CustomerForm(ModelForm):
     class Meta:
         model = Customer
         fields = '__all__'
-        exclude = ['user', 'user_file_upload', 'meta_list']
+        exclude = ['user', 'file_upload', 'meta_list']
 
 
 """
@@ -18,14 +18,8 @@ CLASS - CustomerFileUploadForm, form class just for handling file uploads.
 class CustomerFileUploadForm(ModelForm):
     class Meta:
         model = Customer
-        fields = ('user_file_upload',)
+        fields = ['name', 'date_collected', 'field_id', 'file_upload']
         
-
-class OrderForm(ModelForm):
-    class Meta: # Minimum two fields
-        model = Order # Which model to build a form for
-        fields = '__all__' # Create the form with all the fields from the model
-    
 
 class CreateUserForm(UserCreationForm):
     class Meta:

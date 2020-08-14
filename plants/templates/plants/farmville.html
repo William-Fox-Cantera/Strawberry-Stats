@@ -245,6 +245,19 @@
         background: white;
         box-shadow: 0 0 3px 1px rgba(0, 0, 0, 0.5);
     }
+
+    .rotate {
+        position: absolute;
+        cursor: pointer;
+        height: 50px;
+        width: 300px;
+        left: 50%;
+        bottom: 30px;
+        transform: translate3d(-50%, -180%, 0);
+        font-size: 20px;
+        background: white;
+        box-shadow: 0 0 3px 1px rgba(0, 0, 0, 0.5);
+    }
 </style>
 
 <p class="current-dataset" id="current-data">Current Dataset &#8594 </p>
@@ -286,8 +299,8 @@
 </div>
 
 <div id="map"></div> <!-- The main map -->
-<button class="enable">Highlight Area</button>
-  
+
+
 <div id="calc-box" class="calculation-box">
     <p>Highlight areas using the draw tool.</p>
     <div id="calculated-area" style="z-index: 1;"></div>
@@ -580,6 +593,7 @@ function getLocal(value) {
 // MAPBOX STUFF
 mapboxgl.accessToken = 'pk.eyJ1Ijoid2lsbGlhbWZveCIsImEiOiJja2JzY3V0dTcwMGJ6MnZzYWF2cjRsNXYwIn0.fbOk4CcYFDOMA_nG9JCauA';
 var meta = JSON.parse("{{meta|safe}}".replace(/'/g,'"'));
+console.log(meta)
 var select = document.getElementById("dropdown");
 var selected = select.selectedIndex;
 var optionList = document.getElementsByTagName("option");
@@ -677,7 +691,6 @@ function addIcons (iconSize) {
                 + '<H4 style="font-size: 14px;">Longitude:' + marker.geometry.coordinates[1] + '</H4>'
                 + '<H4 style="background-color: red;">Has Flowers? No</H4>');
 
-
         var savePopup = new mapboxgl.Popup({
             className: "save-popup",
             closeButton: false,
@@ -690,6 +703,7 @@ function addIcons (iconSize) {
             favorites.push(berryIcon.name);
             appendFavorites();
             savePopup.addTo(map);
+            console.log(map.project([berryMarker._lngLat.lng, berryMarker._lngLat.lat]))
         });
 
         berryIcon.addEventListener('mouseup', function () {
@@ -708,7 +722,7 @@ function addIcons (iconSize) {
             map.getCanvas().style.cursor = '';
             popup.remove();
         });
-        berryList.push(map.project([berryMarker._lngLat.lng, berryMarker._lngLat.lat]));
+        berryList.push([berryCount, [berryMarker._lngLat.lng, berryMarker._lngLat.lat]]);
         berryCount++;
     });
 }
@@ -745,11 +759,11 @@ function sizeUpdater(size) {
 // Mapbox gl js draw setup
 var draw = new MapboxDraw({
     displayControlsDefault: false,
-    modes: {
-        ...MapboxDraw.modes,
-        'draw_rectangle_drag': mapboxGLDrawRectangleDrag
-  }
+    controls: {
+        polygon: true
+    }
 });
+
 
 const nav = new mapboxgl.NavigationControl({
   showCompass: false
@@ -758,11 +772,6 @@ const nav = new mapboxgl.NavigationControl({
 map.addControl(nav, 'top-right');
 map.addControl(draw, 'top-right');
 
-document
-  .querySelector('.enable')
-  .addEventListener('click', () => {
-    draw.changeMode('draw_rectangle_drag');
-  });
 
 var geojsonFormat = {
     "type": "Feature",
@@ -792,8 +801,9 @@ document.addEventListener('mousedown', (e) => { mouseButton = e.button; });
 
 // For getting the coordinates of each shape in the current session
 var storageKeyList = [];
-for ( var i = 0, len = localStorage.length; i < len; ++i ) {
+for (let i = 0; i < localStorage.length; ++i ) {
     if (localStorage.key(i).includes(meta_id + "_")) {
+        console.log(localStorage.key(i))
         let modifiedKey = localStorage.key(i).split("_")[1]
         storageKeyList.push(modifiedKey);
     }
@@ -832,15 +842,24 @@ function updateLatLon() {
  * Produces: Nothing
 */
 function updateArea(e) {
-    if (e.type === 'draw.selectionchange' && draw.getSelected().features.length && mouseButton === 0) { // 0 for left mouse button
-        updateLatLon();
-        let gpsCoords = draw.getSelected().features[0].geometry.coordinates[0];
-        let topLeft = map.project([gpsCoords[0][0], gpsCoords[0][1]]);
-        let bottomRight = map.project([gpsCoords[2][0], gpsCoords[2][1]]);
-        generateInfoForm([topLeft, bottomRight]);
-    }
-    if (e.type === 'draw.selectionchange' && mouseButton == 2) { // 2 is for right mouse button
-        draw.trash()
+    if (e.type === 'draw.selectionchange') {
+        if (draw.getSelected().features.length && mouseButton === 0) { // 0 for left mouse button
+            updateLatLon();
+            let gpsCoords = draw.getSelected().features[0].geometry.coordinates[0];
+            /*
+            let topLeft = [gpsCoords[0][0], gpsCoords[0][1]];
+            let topRight = [gpsCoords[1][0], gpsCoords[1][1]];
+            let bottomRight = [gpsCoords[2][0], gpsCoords[2][1]];
+            let bottomLeft = [gpsCoords[3][0], gpsCoords[3][1]];
+            */
+            let polyArray = [];
+            for (let i = 0; i < gpsCoords.length; i++) polyArray.push([gpsCoords[i][0], gpsCoords[i][1]]);
+            //generateInfoForm([topLeft, bottomLeft, bottomRight, topRight, topLeft]);
+            generateInfoForm(polyArray);
+        }
+        if (mouseButton == 2) { // 2 is for right mouse button
+            draw.trash()
+        }
     }
     let data = draw.getAll();
     var answer = document.getElementById('calculated-area');
@@ -851,6 +870,7 @@ function updateArea(e) {
         }
     }
     if (e.type === "draw.create") {
+        console.log(e.features[0].geometry.coordinates[0][0])
         saveLocal("_" + e.features[0].geometry.coordinates[0][0], e.features[0].geometry.coordinates);
     }
     if (data.features.length > 0) {
@@ -870,38 +890,95 @@ function updateArea(e) {
 //-----------------------------------------------------------------------------------------------------------------------------------------
 // Area Form 
 
+
 /*
 * generateInfoForm, when an area highlighted by the user is clicked, this function displays a popup with a form to 
 *                   fill out about the details of that area. Like the soil type, and the family of the plants.
 *
 * Consumes: Nothing
 * Produces: Nothing
-*/
+*///var meta = JSON.parse("{{meta|safe}}".replace(/'/g,'"'));
 function generateInfoForm(selectedPolygon) {
-    let plantsInside = [];
-    console.log(selectedPolygon)
-    for (let i = 0; i < berryList.length; i++) { // Checking to see if plant is inside shaded rectangle
-        console.log(berryList[i])
-        if (berryList[i].x > selectedPolygon[0].x && berryList[i].y > selectedPolygon[0].y 
-        && berryList[i].x < selectedPolygon[1].x && berryList[i].y < selectedPolygon[1].y) {
-            console.log("IN")
+    var areaData = $.ajax({
+        url: '{% url "get_area_form" %}',
+       
+        dataType: 'json',
+        success: function (data) {
+          if (data.is_taken) {
+            alert("A user with this username already exists.");
+          }
         }
+      }) .responseText ;
+
+    let plantsInside = [];
+    let turfPolygon = turf.polygon([selectedPolygon]);
+    for (let i = 0; i < berryList.length; i++) { // Checking to see if plant is inside shaded rectangle
+        let berryCoords = berryList[i][1]; // First index is reserved for the plant number
+        let turfBerryCoord = turf.point([berryCoords[0], berryCoords[1]]);
+        if (turf.booleanPointInPolygon(turfBerryCoord, turfPolygon)) plantsInside.push(i); // The plant number
     }
+
+
+    let plantsInsideString =  "";
+    for (let i = 0; i < plantsInside.length; i++) plantsInsideString += plantsInside[i] + ", ";
     var areaFormPopup = new mapboxgl.Popup({
         className: "areaform-popup",
         closeButton: true,
         closeOnClick: true
     })
-    .setLngLat(map.unproject([cursorCoords['x'], cursorCoords['y']]))
-    .setHTML(   '<p>This is the form</p>' 
-              + '<p>Soil Type: </p>'
-              + '<input placeholder="enter type">'
-              + '<button style="position: absolute; margin: 50% 0% 50% 0%;">Save</button>'
+    .setLngLat(map.unproject([570, 0]))
+    .setHTML(   '<p style="font-size: 16px;">Land Information Form</p>' 
+              + '<h5>Plants in this area:</h5>'
+              + '<p style="font-size: 20px; width: 450px; height: 60px; overflow-x: hidden; overflow-y: scroll;">' + plantsInsideString + '</p>'
+              + '<p style="font-size: 16px; margin-top: 20px;">Name for Area: </p>'
+              + '<input id="area-name" style="" placeholder="enter any name">'
+              + '<p style="font-size: 16px; margin-top: 20px;">Soil Type:</p>'
+              + '<input id="soil-type" style="" placeholder="enter type">'
+              + '<p id="savedText" style="font-family: fantasy; font-size: 18px; visibility: hidden; position: absolute; transform:translate(0%, 180px);">Saved</p>'
+              + '<button onclick="sendAreaForm()" style="position: absolute; transform:translate(-50%, 200px);">save</button>'
+              + '<button onclick="downloadWrapper()" style="position: absolute; transform:translate(20%, 200px);">Download Report</button>'
     );
     areaFormPopup.addTo(map);
 }
 
 
+function sendAreaForm() {
+    document.getElementById("savedText").style.visibility = "visible";
+    $.ajax({
+        url: '{% url "saveAreaForm" %}',
+        data: {
+          'current_dataset': meta_id,
+          'area_name': document.getElementById("area-name").value,
+          'soil_type': document.getElementById("soil-type").value
+        },
+        dataType: 'json',
+        success: function (data) {
+          if (data.is_taken) {
+            alert("A user with this username already exists.");
+          }
+        }
+      }); 
+}
+
+
+function downloadWrapper() {
+    let filename = document.getElementById("area-name").value;
+    let content = document.getElementById("soil-type").value;
+    download(filename, content);
+}
+
+function download(filename, text) {
+  let element = document.createElement('a');
+  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+  element.setAttribute('download', filename);
+
+  element.style.display = 'none';
+  document.body.appendChild(element);
+
+  element.click();
+
+  document.body.removeChild(element);
+}
 </script>
 
 {% endblock content %}

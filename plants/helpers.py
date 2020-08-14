@@ -14,7 +14,7 @@ get_file_path, gets the pathname of the file to be stored int he users private m
 def get_csv_path(instance, filename):
     current_date =  date.today()
     username = instance.user.customer.name
-    filename = instance.user.customer.user_file_upload.name
+    filename = instance.user.customer.file_upload.name
     return username + "/" + str(current_date) + "/" + filename
 
 """

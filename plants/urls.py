@@ -7,7 +7,8 @@ urlpatterns = [
     # AJAX
     url(r'^ajax/save_favorite_plants/$', views.save_favorite_plants, name='save_favorite_plants'),
     url(r'^ajax/remove_plant_index/$', views.remove_plant_index, name='remove_plant_index'),
-    url(r'^ajax/save_drawn_coordinates/$', views.save_drawn_coordinates, name="save_drawn_coordinates"),
+    url(r'^ajax/saveAreaForm/$', views.saveAreaForm, name='saveAreaForm'),
+    url(r'^ajax/get_area_form/$', views.get_area_form, name='get_area_form'),
 
     # Login/Registration
     path('register/', views.registerPage, name="register"),
@@ -17,7 +18,6 @@ urlpatterns = [
     # Dashboard
     path('', views.home, name="home"),
     path('account/', views.accountSettings, name="account"),
-    path('products', views.products, name="products"),
     path('user-page/', views.user_page, name="user-page"),
     path('customer/<str:pk>/', views.customer, name="customer"),
     
@@ -25,11 +25,7 @@ urlpatterns = [
     path('zip_upload/', views.zip_upload, name="zip_upload"),
     path('zip_upload/<str:destination>/', views.zip_upload, name="zip_upload"),
 
-
     # CRUD
-    path('create_order/<str:pk>/', views.createOrder, name="create_order"),
-    path('update_order/<str:pk>/', views.updateOrder, name="update_order"),
-    path('delete_order/<str:pk>/', views.deleteOrder, name="delete_order"),
     path('delete_zip_upload/', views.delete_zip_upload, name="delete_zip_upload"),
     path('delete_zip_upload/<str:filename>/', views.delete_zip_upload, name="delete_zip_upload"),
 
