@@ -18,7 +18,7 @@ CLASS - CustomerFileUploadForm, form class just for handling file uploads.
 class CustomerFileUploadForm(ModelForm):
     class Meta:
         model = Customer
-        fields = ['name', 'date_collected', 'field_id', 'file_upload']
+        fields = ['name', 'date_collected', 'field_id', 'file_upload', 'field_notes']
         
 
 class CreateUserForm(UserCreationForm):

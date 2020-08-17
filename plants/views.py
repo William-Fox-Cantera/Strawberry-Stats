@@ -107,8 +107,8 @@ zip_upload, this function renders the user page for uploading a csv file into th
 :param request: the html request from the template user.html
 :param destination: string, what action the function should take
 """
-#@login_required(login_url='login')
-#@allowed_users(allowed_roles=['customer'])
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['customer'])
 def zip_upload(request, destination="start"):
     customer = request.user.customer
     files = [ k for k, v in customer.meta_list.items() ]
@@ -165,21 +165,26 @@ def upload_images(request, upload_name):
         zipfile.extractall()
         i = 1
         file_list = zipfile.namelist()
-        root = file_list[0]
-        file_list.remove(file_list[0]) # remove pesky root directory
         jpg_list = [name for name in file_list if name.endswith(".jpg")]
+        json_database = next(name for name in file_list if name.endswith(".json"))
         for filename in jpg_list: 
-            if filename.endswith(".jpg"): # Other files shouldn't be trusted
-                exif_dict = piexif.load(str(i) + '.jpg') # file_list[0] is the name of the root dir in zip file
-                comment = piexif.helper.UserComment.load(exif_dict['Exif'][piexif.ExifIFD.UserComment])
-                meta_dict = json.loads(comment)
-                data = zipfile.read(str(i) + '.jpg')
-                dataEnc = BytesIO(data)
-                full_image_path = "%s/%s/%s" % (customer.name, meta_dict["date_captured"], filename)
-                media_storage.save(full_image_path, dataEnc)
-                meta_dict["image"] = full_image_path
-                meta_list.append(meta_dict) # list of dictionaries containing the meta data 
-                i += 1
+            data = zipfile.read(str(i) + '.jpg')
+            dataEnc = BytesIO(data)
+            full_image_path = "%s/%s/%s" % (customer.name, "1-1-16", filename)
+            media_storage.save(full_image_path, dataEnc)
+            i += 1
+
+        json_read = zipfile.read(json_database)
+        json_data = json.loads(json_read) 
+        json_length = len(json_data)
+        j = 1
+        while True:
+            if j > json_length:
+                break
+            json_data["plant_" + str(j)]["image"] = "%s/%s/%s" % (customer.name, "1-1-16", str(j) + ".jpg")
+            meta_list.append(json_data["plant_" + str(j)])
+            j += 1
+        print(meta_list)
         customer.meta_list[upload_name] = meta_list
         customer.save() # add the list of dictionaries to the database
         customer.file_upload.delete(save=False) # removes from postgresql, s3
