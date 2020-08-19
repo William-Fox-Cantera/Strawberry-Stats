@@ -24,9 +24,10 @@ class CustomerFileUploadForm(ModelForm):
         username = kwargs.pop('username')
         super().__init__(*args, **kwargs)
         wanted_user = Customer.objects.get(name=username)
-        print(wanted_user.field_id)
-        FRUIT_CHOICES = (('HEY', "HJ"), ("BANAAN", "APLLE"))
-        self.fields['field_id'] = forms.CharField(label='What is your favorite fruit?', widget=forms.Select(choices=FRUIT_CHOICES))
+        fields = wanted_user.field_id
+        fields = fields.split(",")
+        FIELDS = ((fields[0], fields[0]), ("---", "---"))
+        self.fields['field_id'] = forms.CharField(label='Select Field', widget=forms.Select(choices=FIELDS))
 
 
 

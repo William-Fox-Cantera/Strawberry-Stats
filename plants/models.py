@@ -32,7 +32,7 @@ class Customer(models.Model):
     date_collected = models.DateField(default=datetime.date.today)
     
     permitted_fields = models.CharField(max_length=500, null=True)
-    field_id = models.CharField(max_length=200, null=True, choices=(('he', 'he'), ('ho', 'ho')), default="---") 
+    field_id = models.CharField(max_length=200, null=True, choices=(('---', '---'), ('---', '---')), default="---") 
     field_notes = models.CharField(max_length=500, null=True, blank=True)
 
     def __str__(self):

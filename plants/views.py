@@ -304,6 +304,10 @@ def delete_field_form(request, fieldname):
     field_names = []
     field = FieldInfo.objects.filter(field_name=fieldname)
 
+    for user in Customer.objects.all():
+        user.field_id = ""
+        user.save()
+
     field.delete()
     for field in FieldInfo.objects.all():
         field_names.append(field.field_name)
@@ -317,8 +321,8 @@ def get_field_permissions(request):
     fieldname = request.GET.get("fieldname", None)
     print(username)
     print(fieldname)
-    user = Customer.objects.filter(name=username)
-    user.permitted_fields += fieldname
+    user = Customer.objects.get(name=username)
+    user.field_id += fieldname + ","
     user.save()
     return JsonResponse({})
 
