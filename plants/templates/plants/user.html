@@ -10,6 +10,7 @@
         font-size: 24px;
         font-family: fantasy;
     }
+
     .button {
         margin: 0;
         position: absolute;
@@ -194,7 +195,8 @@
         }
     </script>
 {% else %} <!-- Button to start the process -->
-<p class="instructions">Welcome to the site, press the button below to get started!</p>
+<p class="instructions">Follow the link below and sign into your Qnap account to upload your file. Click start once you recieve your data back from us</p>
+<p style="color: rgb(134, 134, 243); margin-left: 720px; font-family: arial; font-size: 24px;" href="https://myqnapcloud.com/u#/my_device/no_device?r=1597791355418">Click to redirect to our cloud based file storage</p>
 <a class="button" href="{% url 'zip_upload' %}" style="vertical-align:middle"><span>Start</span></a>
 {% endif %}
 

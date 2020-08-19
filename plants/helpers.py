@@ -12,7 +12,7 @@ get_path, gets the pathname of the file to be stored int he users private media
 :param filename: the name of the file
 """
 def get_path(instance, filename):
-    current_date =  date.today()
+    current_date = date.today()
     username = instance.user.customer.name
     filename = instance.user.customer.file_upload.name
     return filename
@@ -25,3 +25,9 @@ get_profile_pic_path, makes a path to store user profile picture.
 """
 def get_profile_pic_path(instance, filename):
     return '{0}/account_data/{1}'.format(instance.user.username, filename)
+
+
+
+def get_fields(instance):
+    print(instance.user.customer.permitted_fields)
+    return (('hey', 'hi'), ('no', 'yes'))

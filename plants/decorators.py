@@ -29,6 +29,7 @@ def allowed_users(allowed_roles=[]):
 def admin_only(view_func):
     def wrapper_func(request, *args, **kwargs):
         group = None
+        print("ADMIN")
         if request.user.groups.exists():
             group = request.user.groups.all()[0].name
 

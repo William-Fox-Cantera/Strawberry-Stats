@@ -1,0 +1,91 @@
+{% extends 'plants/main.html' %}
+{% load html_filters %}
+
+{% block content %}
+
+	<br>
+
+<div class="row">
+	<div class="col-md">
+		<div class="card card-body">
+			<h5>Customer:</h5>
+			<hr>
+
+		</div>
+	</div>
+
+	<div class="col-md">
+		<div class="card card-body">
+			<h5>Contact Information</h5>
+			<hr>
+			<p>Email: {{customer.email}}</p>
+			<p>Phone: {{customer.phone}}</p>
+		</div>
+	</div>
+
+	<div class="col-md">
+		<div class="card card-body">
+		</div>
+	</div>
+</div>
+
+
+<br>
+<div class="row">
+	<div class="col">
+		<div class="card card-body">
+			<form method="POST" id="submitform" action="{% url 'save_field_form' %}" enctype="multipart/form-data">
+				{% csrf_token %}
+				{{field_form.as_p}}
+				<button class="btn btn-primary" type="submit">Submit</button>
+		  </form>
+		</div>
+	</div>
+	<div class="col">
+		<div class="card card-body" style="height: 450px; overflow-y: scroll;">
+			<p>Current Fields Saved</p>
+				{% for name in field_names %}
+					<p>{{ name }} &nbsp; &nbsp; &nbsp;<select id="{{name}}_select">
+						{% for username in usernames %}
+						<option>
+							{{username}}
+						</option>
+						{% endfor %}
+					</select><a class="btn btn-primary" id="{{name}}_button" onclick="UpdateUserPerms(this.id)">Give Permission</a>
+					<a class="btn btn-danger" href="{% url 'delete_field_form' field_names|get_at_index:forloop.counter0 %}">Delete</a>
+				</p> 
+				{% endfor %}
+		</div>
+	</div>
+</div>
+<br>
+
+<div class="row">
+	<div class="col-md">
+		<div class="card card-body">
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	function UpdateUserPerms(buttonId) {
+		var mySelect = document.getElementById(buttonId.split("_")[0] + "_select");
+		var selectedIndex = document.getElementById(buttonId.split("_")[0] + "_select").selectedIndex;
+		var chosenName = mySelect.options[mySelect.selectedIndex].text;
+		$.ajax({
+        url: '{% url "get_field_permissions" %}',
+        data: {
+          'username':chosenName,
+          'fieldname':buttonId.split("_")[0]
+        },
+        dataType: 'json',
+        success: function (data) {
+          if (data.is_taken) {
+            alert("A user with this username already exists.");
+          }
+        }
+      });
+	}
+</script>
+{% endblock %}
+

@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.forms import inlineformset_factory
 from .models import *
-from .forms import CreateUserForm, CustomerForm, CustomerFileUploadForm
+from .forms import CreateUserForm, CustomerForm, CustomerFileUploadForm, FieldInfoForm
 from .decorators import unauthenticated_user, allowed_users, admin_only
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import authenticate, login, logout
@@ -89,7 +89,7 @@ delete_zip_upload, removes the key and value pair from the meta-list attribute.
 """
 def delete_zip_upload(request, filename=""):
     customer = request.user.customer
-    form = CustomerFileUploadForm(instance=customer)
+    form = CustomerFileUploadForm(instance=customer, username=customer.name)
     if (customer.meta_list.get(filename) != None):
         customer.meta_list.pop(filename)
         customer.save()
@@ -108,11 +108,11 @@ zip_upload, this function renders the user page for uploading a csv file into th
 :param destination: string, what action the function should take
 """
 @login_required(login_url='login')
-@allowed_users(allowed_roles=['customer'])
+@allowed_users(allowed_roles=['customer', 'admin'])
 def zip_upload(request, destination="start"):
     customer = request.user.customer
     files = [ k for k, v in customer.meta_list.items() ]
-    form = CustomerFileUploadForm(instance=customer)
+    form = CustomerFileUploadForm(instance=customer, username=customer.name)
     if destination == "start": # Just render the form if the start button is pressed
         return render(request, "plants/user.html", {'form':form, 'should_generate':True, 
                                                     'customer':customer, 'upload_names':files })
@@ -123,7 +123,7 @@ def zip_upload(request, destination="start"):
     elif destination == "upload":
         if request.method == 'POST':
             upload_name = ""
-            form = CustomerFileUploadForm(request.POST, request.FILES, instance=customer)
+            form = CustomerFileUploadForm(request.POST, request.FILES, instance=customer, username=customer.name)
             for filename, file in request.FILES.items(): # get the zip file name
                 upload_name = request.FILES[filename].name
             if upload_name in customer.meta_list.keys(): # make sure the same file isn't being uploaded more than once
@@ -246,25 +246,6 @@ def logoutUser(request):
     return redirect('login')
 
 
-@login_required(login_url='login') # Redirects user back to login page if they try to access a page without being logged in
-@admin_only
-def home(request):
-    orders = Order.objects.all()
-    customers = Customer.objects.all()
-
-    total_customers = customers.count()
-
-    total_orders = orders.count()
-    delivered = orders.filter(status='Delivered').count() # Filter for orders trhat are delivered
-    pending = orders.filter(status='Pending').count()
-
-    context = {'orders': orders, 'customers': customers,
-    'total_orders': total_orders, 'delivered':delivered,
-    'pending':pending }
-    
-    return render(request, "plants/user.html", context)
-
-
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['customer'])
 def accountSettings(request):
@@ -281,9 +262,71 @@ def accountSettings(request):
 
 
 
+def home(request):
+    if request.user.groups.filter(name='admin').exists():
+        form = FieldInfoForm()
+
+        field_names = []
+        for field in FieldInfo.objects.all():
+            field_names.append(field.field_name)
+        
+        usernames = []
+        for user in Customer.objects.all():
+            usernames.append(user.name)
+
+        context = {'field_form':form, 'field_names':field_names, 'usernames':usernames}
+        return render(request, "plants/admin_input.html", context)
+    else:
+        return render(request, "plants/user.html")
+
+
+
+def save_field_form(request):
+    submitted_form = FieldInfoForm(request.POST)
+    if request.method == 'POST':
+        if submitted_form.is_valid():
+            submitted_form.save()
+            form = FieldInfoForm()
+    field_names = []
+    for field in FieldInfo.objects.all():
+        field_names.append(field.field_name)
+
+    usernames = []
+    for user in Customer.objects.all():
+        usernames.append(user.name)
+
+    context = {'field_form':form, 'field_names':field_names, 'usernames':usernames}
+    return render(request, "plants/admin_input.html", context)
+
+
+def delete_field_form(request, fieldname):
+    form = FieldInfoForm()
+    field_names = []
+    field = FieldInfo.objects.filter(field_name=fieldname)
+
+    field.delete()
+    for field in FieldInfo.objects.all():
+        field_names.append(field.field_name)
+    context = {'field_form':form}
+    return render(request, "plants/admin_input.html", context)
+
+
+
+def get_field_permissions(request):
+    username = request.GET.get("username", None)
+    fieldname = request.GET.get("fieldname", None)
+    print(username)
+    print(fieldname)
+    user = Customer.objects.filter(name=username)
+    user.permitted_fields += fieldname
+    user.save()
+    return JsonResponse({})
+
+
+
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['admin'])
-def customer(request, pk):
+def admin_input(request, pk):
     customer = Customer.objects.get(id=pk)
     orders = customer.order_set.all() # Query customers child object from model
     order_count = orders.count()
@@ -293,6 +336,6 @@ def customer(request, pk):
 
     context = {'customer':customer, 'orders':orders, 'order_count':order_count, 
                'myFilter':myFilter}
-    return render(request, "plants/customer.html", context)
+    return render(request, "plants/admin_input.html", context)
 
 

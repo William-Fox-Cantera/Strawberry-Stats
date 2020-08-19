@@ -2,7 +2,7 @@ from django.db import models
 from django import forms
 from django.contrib.auth.models import User
 from plants.storage_backends import PublicMediaStorage, PrivateMediaStorage
-from .helpers import get_path, get_profile_pic_path
+from .helpers import get_path, get_profile_pic_path, get_fields
 from django.contrib.postgres.fields import JSONField
 import datetime
 
@@ -13,9 +13,7 @@ import datetime
 #   - python manage.py makemigrations
 #   - python manage.py migrate
 
-
 class Customer(models.Model):
-    # null = True allows for the fields to be blank without errors
     user = models.OneToOneField(User, null=True, blank=True, on_delete=models.CASCADE)
     name = models.CharField(max_length=200, null=True) 
     phone = models.CharField(max_length=200, null=True)
@@ -32,18 +30,26 @@ class Customer(models.Model):
     meta_list = JSONField(null=True, default=dict)
     area_info_forms = JSONField(null=True, default=dict)
     date_collected = models.DateField(default=datetime.date.today)
-    FIELD1 = 'Fifer'
-    FIELD2 = 'Camden'
-    FIELDS = (
-        (FIELD1, 'Fifer'),
-        (FIELD2, 'Camden')
-    )
-    field_id = models.CharField(max_length=200, choices=FIELDS, default=FIELD1) 
+    
+    permitted_fields = models.CharField(max_length=500, null=True)
+    field_id = models.CharField(max_length=200, null=True, choices=(('he', 'he'), ('ho', 'ho')), default="---") 
     field_notes = models.CharField(max_length=500, null=True, blank=True)
 
-    """
-    __str__: Method to enumerate the class, especially in the database.
-    """
     def __str__(self):
         return self.name or ''
+
+
+class FieldInfo(models.Model):
+    user = models.OneToOneField(User, null=True, blank=True, on_delete=models.CASCADE)
+    operator_name = models.CharField(max_length=200)
+    field_name = models.CharField(max_length=200)
+    pixels_per_meter = models.CharField(max_length=200)
+    rotational_offset = models.CharField(max_length=200)
+    datum_latitude = models.CharField(max_length=200)
+    datum_longitude = models.CharField(max_length=200)
+    camera_to_gps_x = models.CharField(max_length=200)
+    camera_to_gps_y = models.CharField(max_length=200)
+
+
+
 
