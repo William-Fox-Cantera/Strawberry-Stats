@@ -196,8 +196,33 @@
     </script>
 {% else %} <!-- Button to start the process -->
 <p class="instructions">Follow the link below and sign into your Qnap account to upload your file. Click start once you recieve your data back from us</p>
-<p style="color: rgb(134, 134, 243); margin-left: 720px; font-family: arial; font-size: 24px;" href="https://myqnapcloud.com/u#/my_device/no_device?r=1597791355418">Click to redirect to our cloud based file storage</p>
-<a class="button" href="{% url 'zip_upload' %}" style="vertical-align:middle"><span>Start</span></a>
+<a style="color: rgb(134, 134, 243); margin-left: 720px; font-family: arial; font-size: 24px;" href="https://myqnapcloud.com/u#/my_device/no_device?r=1597791355418">Click to redirect to our cloud based file storage</a>
+
+<div style="transform:translate(40%, 50%);">
+    <p>Operator Name: <input id="operator_name"></p>
+    <p>Camera Height: <input id="camera_height"></p>
+    <p>Rotational Offset(Degrees): <input id="rotational_offset"></p>
+    <p>Notes: <input id="notes"></p>
+    <a id="json_download" onclick=JsonDownload() class="btn btn-warning">Download</a>
+</div>
+<a class="button" href="{% url 'zip_upload' 'start' %}" style="transform:translate(-100px, 200px); vertical-align:middle"><span>Start</span></a>
+
 {% endif %}
+
+<script type="text/javascript">
+    function JsonDownload() {
+        var operator_name = document.getElementById("operator_name").value;
+        var camera_height = document.getElementById("camera_height").value;
+        var rotational_offset = document.getElementById("rotational_offset").value;
+        var notes = document.getElementById("notes").value;
+		var storageObj = {'operator_name':operator_name, "camera_height(meters)":camera_height,
+                          'rotational_offset(degrees)':rotational_offset, "notes":notes};
+		var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(storageObj));
+		var dlAnchorElem = document.getElementById("json_download");
+		dlAnchorElem.setAttribute("href",     dataStr     );
+		dlAnchorElem.setAttribute("download", "collection_info.json");
+	}
+
+</script>
 
 {% endblock content %}

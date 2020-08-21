@@ -44,15 +44,17 @@
 	<div class="col">
 		<div class="card card-body" style="height: 450px; overflow-y: scroll;">
 			<p>Current Fields Saved</p>
-				{% for name in field_names %}
-					<p>{{ name }} &nbsp; &nbsp; &nbsp;<select id="{{name}}_select">
+				{% for field in fields %}
+					<p>{{ field.field_id }} &nbsp; &nbsp; &nbsp;<select id="{{field.field_id}}_select">
 						{% for username in usernames %}
 						<option>
 							{{username}}
 						</option>
 						{% endfor %}
-					</select><a class="btn btn-primary" id="{{name}}_button" onclick="UpdateUserPerms(this.id)">Give Permission</a>
-					<a class="btn btn-danger" href="{% url 'delete_field_form' field_names|get_at_index:forloop.counter0 %}">Delete</a>
+					</select><a class="btn btn-primary" id="{{field.field_id}}_button" onclick="UpdateUserPerms(this.id)">Give Access</a>
+					<a class="btn btn-warning" id="download_{{field.field_id}}" name="{{field.field_id}}" onclick="JsonDownload(this.name)">Download</a>
+					<a class="btn btn-danger" href="{% url 'delete_field_form' field.field_id %}">Delete</a>
+					<a id="access-msg", style="visibility: hidden;">User now has access to this field</a>
 				</p> 
 				{% endfor %}
 		</div>
@@ -68,10 +70,12 @@
 </div>
 
 <script type="text/javascript">
+
 	function UpdateUserPerms(buttonId) {
 		var mySelect = document.getElementById(buttonId.split("_")[0] + "_select");
 		var selectedIndex = document.getElementById(buttonId.split("_")[0] + "_select").selectedIndex;
 		var chosenName = mySelect.options[mySelect.selectedIndex].text;
+		document.getElementById("access-msg").style.visibility = "visible"
 		$.ajax({
         url: '{% url "get_field_permissions" %}',
         data: {
@@ -85,6 +89,14 @@
           }
         }
       });
+	}
+
+	function JsonDownload(name) {
+		var storageObj = JSON.parse("{{ fields_dict|safe }}".replace(/'/g,'"'))[name];
+		var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(storageObj));
+		var dlAnchorElem = document.getElementById("download_" + name);
+		dlAnchorElem.setAttribute("href",     dataStr     );
+		dlAnchorElem.setAttribute("download", "field_info.json");
 	}
 </script>
 {% endblock %}

@@ -2,7 +2,6 @@ from time import localtime
 from datetime import datetime
 from datetime import date
 
-
 """
 get_path, gets the pathname of the file to be stored int he users private media 
             bucket. S3 does not have directories, only simulated irectories via
@@ -25,9 +24,3 @@ get_profile_pic_path, makes a path to store user profile picture.
 """
 def get_profile_pic_path(instance, filename):
     return '{0}/account_data/{1}'.format(instance.user.username, filename)
-
-
-
-def get_fields(instance):
-    print(instance.user.customer.permitted_fields)
-    return (('hey', 'hi'), ('no', 'yes'))

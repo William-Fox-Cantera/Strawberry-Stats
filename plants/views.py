@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.forms import inlineformset_factory
 from .models import *
-from .forms import CreateUserForm, CustomerForm, CustomerFileUploadForm, FieldInfoForm
+from .forms import CreateUserForm, CustomerForm, CustomerFileUploadForm, StaticFieldInfoForm
 from .decorators import unauthenticated_user, allowed_users, admin_only
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import authenticate, login, logout
@@ -19,7 +19,7 @@ from zipfile import ZipFile
 from io import BytesIO
 from .models import Customer
 from django.http import JsonResponse
-
+from .admin import generate_field_info_dict
 
 
 def get_area_form(request):
@@ -144,7 +144,7 @@ def zip_upload(request, destination="start"):
 
         context = { 'form':form, 'should_generate':True, 'customer':customer,
                     'total_plants':100, 'date_captured':"6/16/2020",
-                    'percent_flowered':"60%", 'upload_names':files }
+                    'percent_flowered':"60%", 'upload_names':files}
         return render(request, 'plants/user.html', context)
 
 
@@ -193,7 +193,7 @@ def upload_images(request, upload_name):
 """
 user_page, simple method for rendering the home page for the user.
 
-:param request: the html request from teh template
+:param request: the html request from the template
 """
 @login_required(login_url='login')
 @allowed_users(allowed_roles=['customer'])
@@ -264,17 +264,14 @@ def accountSettings(request):
 
 def home(request):
     if request.user.groups.filter(name='admin').exists():
-        form = FieldInfoForm()
+        form = StaticFieldInfoForm()
 
-        field_names = []
-        for field in FieldInfo.objects.all():
-            field_names.append(field.field_name)
-        
         usernames = []
         for user in Customer.objects.all():
             usernames.append(user.name)
+        fields_dict = generate_field_info_dict()
 
-        context = {'field_form':form, 'field_names':field_names, 'usernames':usernames}
+        context = {'field_form':form, 'fields':StaticFieldInfo.objects.all(), 'usernames':usernames, 'fields_dict':fields_dict}
         return render(request, "plants/admin_input.html", context)
     else:
         return render(request, "plants/user.html")
@@ -282,36 +279,37 @@ def home(request):
 
 
 def save_field_form(request):
-    submitted_form = FieldInfoForm(request.POST)
     if request.method == 'POST':
+        submitted_form = StaticFieldInfoForm(request.POST)
         if submitted_form.is_valid():
             submitted_form.save()
-            form = FieldInfoForm()
-    field_names = []
-    for field in FieldInfo.objects.all():
-        field_names.append(field.field_name)
+            form = StaticFieldInfoForm()
+            return redirect("home")
 
     usernames = []
     for user in Customer.objects.all():
         usernames.append(user.name)
 
-    context = {'field_form':form, 'field_names':field_names, 'usernames':usernames}
+    fields_dict = generate_field_info_dict()
+    context = {'field_form':form, 'fields':StaticFieldInfo.objects.all(), 'usernames':usernames, 'fields_dict':fields_dict}
     return render(request, "plants/admin_input.html", context)
 
 
 def delete_field_form(request, fieldname):
-    form = FieldInfoForm()
+    form = StaticFieldInfoForm()
     field_names = []
-    field = FieldInfo.objects.filter(field_name=fieldname)
+    field = StaticFieldInfo.objects.filter(field_id=fieldname)
+    fields_dict = generate_field_info_dict()
+    usernames = []
 
     for user in Customer.objects.all():
         user.field_id = ""
+        user.permitted_fields = ""
         user.save()
+        usernames.append(user.name)
 
     field.delete()
-    for field in FieldInfo.objects.all():
-        field_names.append(field.field_name)
-    context = {'field_form':form}
+    context = {'field_form':form, 'usernames':usernames, 'fields':StaticFieldInfo.objects.all(), 'fields_dict':fields_dict}
     return render(request, "plants/admin_input.html", context)
 
 
@@ -319,12 +317,18 @@ def delete_field_form(request, fieldname):
 def get_field_permissions(request):
     username = request.GET.get("username", None)
     fieldname = request.GET.get("fieldname", None)
-    print(username)
-    print(fieldname)
+    print("USER: " + username)
+    print("FIELD: " + fieldname)
     user = Customer.objects.get(name=username)
-    user.field_id += fieldname + ","
+    current_fields = user.permitted_fields.split(",")
+    if fieldname in current_fields: # Ignore duplicate fields
+        return redirect("home")
+
+    if user.permitted_fields == None:
+        user.permitted_fields = ""
+    user.permitted_fields += fieldname + ","
     user.save()
-    return JsonResponse({})
+    return redirect("home")
 
 
 

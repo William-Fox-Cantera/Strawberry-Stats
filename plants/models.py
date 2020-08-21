@@ -2,7 +2,7 @@ from django.db import models
 from django import forms
 from django.contrib.auth.models import User
 from plants.storage_backends import PublicMediaStorage, PrivateMediaStorage
-from .helpers import get_path, get_profile_pic_path, get_fields
+from .helpers import get_path, get_profile_pic_path
 from django.contrib.postgres.fields import JSONField
 import datetime
 
@@ -39,16 +39,13 @@ class Customer(models.Model):
         return self.name or ''
 
 
-class FieldInfo(models.Model):
+class StaticFieldInfo(models.Model):
     user = models.OneToOneField(User, null=True, blank=True, on_delete=models.CASCADE)
-    operator_name = models.CharField(max_length=200)
-    field_name = models.CharField(max_length=200)
-    pixels_per_meter = models.CharField(max_length=200)
-    rotational_offset = models.CharField(max_length=200)
+    field_id = models.IntegerField()
     datum_latitude = models.CharField(max_length=200)
     datum_longitude = models.CharField(max_length=200)
-    camera_to_gps_x = models.CharField(max_length=200)
-    camera_to_gps_y = models.CharField(max_length=200)
+
+
 
 
 
