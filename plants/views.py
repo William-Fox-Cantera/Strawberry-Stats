@@ -184,8 +184,8 @@ def upload_images(request, upload_name):
         while True:
             if j > json_length:
                 break
-            json_data["plant_" + str(j)]["image"] = "%s/%s/%s" % (customer.name, "1-1-16", str(j) + ".jpg")
-            meta_list.append(json_data["plant_" + str(j)])
+            json_data[str(j)]["image"] = "%s/%s/%s" % (customer.name, "1-1-16", str(j) + ".jpg")
+            meta_list.append(json_data[str(j)])
             j += 1
         print(meta_list)
         customer.meta_list[upload_name] = meta_list
