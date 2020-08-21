@@ -168,11 +168,14 @@ def upload_images(request, upload_name):
         jpg_list = [name for name in file_list if name.endswith(".jpg")]
         json_database = next(name for name in file_list if name.endswith(".json"))
         for filename in jpg_list: 
-            data = zipfile.read(str(i) + '.jpg')
-            dataEnc = BytesIO(data)
-            full_image_path = "%s/%s/%s" % (customer.name, "1-1-16", filename)
-            media_storage.save(full_image_path, dataEnc)
-            i += 1
+            try:
+                data = zipfile.read(str(i) + '.jpg')
+                dataEnc = BytesIO(data)
+                full_image_path = "%s/%s/%s" % (customer.name, "1-1-16", filename)
+                media_storage.save(full_image_path, dataEnc)
+                i += 1
+            except:
+                i += 1
 
         json_read = zipfile.read(json_database)
         json_data = json.loads(json_read) 
