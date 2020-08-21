@@ -25,7 +25,9 @@ class CustomerFileUploadForm(ModelForm):
         super().__init__(*args, **kwargs)
         wanted_user = Customer.objects.get(name=username)
 
-        fields = wanted_user.permitted_fields.split(",")
+        fields = (("---"),("---"))
+        if wanted_user.permitted_fields != None:
+            fields = wanted_user.permitted_fields.split(",")
         FIELDS = (("---", "---"),)
         for field in fields:
             print(field)
