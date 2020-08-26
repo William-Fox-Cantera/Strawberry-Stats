@@ -160,8 +160,8 @@ def zip_upload(request, destination="start"):
             print('error')
             context = {'should_generate':True, 'customer':customer,
                         'total_plants':100, 'date_captured':"6/16/2020",
-                        'percent_flowered':"60%"}
-            return render(request, 'plants/user.html', context)
+                        'percent_flowered':"60%", 'upload_names':files}
+            return render(request, 'plants/farmville.html', context)
         
     
 
