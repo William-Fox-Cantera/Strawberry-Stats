@@ -123,46 +123,46 @@ def zip_upload(request, destination="start"):
         # get a handle on the bucket that holds your file
         bucket = s3.Bucket('tric-static-bucket') # example: energy_market_procesing
         # get a handle on the object you want (i.e. your file)
-        #try:
-        print("success")
-        obj = bucket.Object(key='media/%s/%s/plant_data.json' % (customer.name, "set-"+str(customer.dataset_count)))
-        i = 0
+        try:
+            print("success")
+            obj = bucket.Object(key='media/%s/%s/plant_data.json' % (customer.name, "set-"+str(customer.dataset_count)))
+            i = 0
 
-        # get the object
-        response = obj.get()
-        # read the contents of the file
-        lines = response['Body'].read()
-        meta = json.loads(lines)
-        # Providing the links to the images on s3
-        s3_starter = "https://tric-static-bucket.s3.us-east-2.amazonaws.com/media"
-        print(meta)
-        for entry in meta: 
-            set_string = "set-" + str(customer.dataset_count)
-            entry["image"] = "%s/%s/%s/%s.jpg" % (s3_starter, customer.name, set_string, str(i))
-            i += 1
+            # get the object
+            response = obj.get()
+            # read the contents of the file
+            lines = response['Body'].read()
+            meta = json.loads(lines)
+            # Providing the links to the images on s3
+            s3_starter = "https://tric-static-bucket.s3.us-east-2.amazonaws.com/media"
+            print(meta)
+            for entry in meta: 
+                set_string = "set-" + str(customer.dataset_count)
+                entry["image"] = "%s/%s/%s/%s.jpg" % (s3_starter, customer.name, set_string, str(i))
+                i += 1
 
-        customer.meta_list["set-" + str(customer.dataset_count)] = meta
-        print(customer.meta_list)
-        
-        if obj != None:
-            print("Incremented")
-            customer.dataset_count += 1
-        
-        customer.save()
+            customer.meta_list["set-" + str(customer.dataset_count)] = meta
+            print(customer.meta_list)
+            
+            if obj != None:
+                print("Incremented")
+                customer.dataset_count += 1
+            
+            customer.save()
 
 
+            
+            return render(request, "plants/farmville.html", {"meta":customer.meta_list, 'date_captured':"6/16/2020",
+                                                            "percent_flowered":"50%", "total_plants":"8", 'upload_names':files})
         
-        return render(request, "plants/farmville.html", {"meta":customer.meta_list, 'date_captured':"6/16/2020",
-                                                        "percent_flowered":"50%", "total_plants":"8", 'upload_names':files})
         
-        '''
         except: 
             print('error')
             context = {'should_generate':True, 'customer':customer,
                         'total_plants':100, 'date_captured':"6/16/2020",
                         'percent_flowered':"60%"}
             return render(request, 'plants/user.html', context)
-        '''
+        
     
 
     context = {'should_generate':True, 'customer':customer,
