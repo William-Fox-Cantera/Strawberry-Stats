@@ -148,75 +148,32 @@
     }
 </style>
 
-{% if should_generate %} <!-- Renders the file upload once the start button is pressed --> 
-    <p id="zip-instruction">Upload your zip file, hit submit, then press the view button</p>
-    <div class="container">
-        <div class="box">
-            <div class="box-row">
-                <div class="submit-box col-md-9">
-                    <div class="card card-body submitform">
-                        <form method="POST" id="submitform" action="{% url 'zip_upload' 'upload' %}" enctype="multipart/form-data">
-                            {% csrf_token %}
-                            {{form.as_p}}
-                            <input class="btn btn-primary" type="submit" onclick="showUploadGif()" name="Update Information">
-                            <br>
-                            <!-- Django error message displayer -->
-                            {% if messages %}
-                                <ul class="messages">
-                                    {% for message in messages %}
-                                        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-                                    {% endfor %}
-                                </ul>
-                            {% endif %}
-                        </form>
-                    </div>
-                </div>
-                <div class="col-md-9">
-                    <div class="upload-list">
-                        <h3 style="padding-left: 20px;">Current Datasets Uploaded</h3>
-                        {% if upload_names %}
-                            {% for filename in upload_names %}
-                                <a class="filename" style="font-family: fantasy; font-size: 22px;">{{ filename }}</a> 
-                                <a class="filename delete btn btn-sm btn-danger" style="max-width: 100px;" href="{% url 'delete_zip_upload' upload_names|get_at_index:forloop.counter0 %}">Delete</a>
-                                <br>
-                            {% endfor %}
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <img src="https://tric-static-bucket.s3.us-east-2.amazonaws.com/static/images/uploading.gif" id="upload-gif">
-    <a class="view-button button" href="{% url 'zip_upload' 'farmville' %}" style="vertical-align:middle"><span>view</span></a>
-    <script type="text/javascript">
-        function showUploadGif() {
-            document.getElementById("upload-gif").style.visibility = "visible";
-            document.getElementById("zip-instruction").style.visibility = "hidden";
-        }
-    </script>
-{% else %} <!-- Button to start the process -->
 <p class="instructions">Follow the link below and sign into your Qnap account to upload your file. Click start once you recieve your data back from us</p>
 <a style="color: rgb(134, 134, 243); margin-left: 720px; font-family: arial; font-size: 24px;" href="https://myqnapcloud.com/u#/my_device/no_device?r=1597791355418">Click to redirect to our cloud based file storage</a>
 
-<div style="transform:translate(40%, 50%);">
+<div style="transform:translate(40%, 30%);">
     <p>Operator Name: <input id="operator_name"></p>
-    <p>Camera Height: <input id="camera_height"></p>
+    <p>Camera Height(Meters): <input id="camera_height"></p>
     <p>Rotational Offset(Degrees): <input id="rotational_offset"></p>
+    <p>Camera Fov X(Meters): <input id="cam_fov_x"></p>
+    <p>Camera Fov Y(Meters): <input id="cam_fov_y"></p>
     <p>Notes: <input id="notes"></p>
     <a id="json_download" onclick=JsonDownload() class="btn btn-warning">Download</a>
 </div>
-<a class="button" href="{% url 'zip_upload' 'start' %}" style="transform:translate(-100px, 200px); vertical-align:middle"><span>Start</span></a>
+<a class="button" href="{% url 'zip_upload' 'farmville' %}" style="transform:translate(-100px, 200px); vertical-align:middle"><span>View</span></a>
 
-{% endif %}
 
 <script type="text/javascript">
     function JsonDownload() {
         var operator_name = document.getElementById("operator_name").value;
         var camera_height = document.getElementById("camera_height").value;
         var rotational_offset = document.getElementById("rotational_offset").value;
+        var cam_fov_x = document.getElementById("cam_fov_x").value;
+        var cam_fov_y = document.getElementById("cam_fov_y").value;
         var notes = document.getElementById("notes").value;
 		var storageObj = {'operator_name':operator_name, "camera_height(meters)":camera_height,
-                          'rotational_offset(degrees)':rotational_offset, "notes":notes};
+                          'rotational_offset(degrees)':rotational_offset, "notes":notes,
+                          'cam_fov_x':cam_fov_x, 'cam_fov_y':cam_fov_y};
 		var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(storageObj));
 		var dlAnchorElem = document.getElementById("json_download");
 		dlAnchorElem.setAttribute("href",     dataStr     );

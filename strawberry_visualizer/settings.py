@@ -30,7 +30,7 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY') if IS_LIVE else DJANGO_SECRET_KEY
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["strawberrystats.com", "www.strawberrystats.com", "tric-datasite.herokuapp.com", "127.0.0.1"]
+ALLOWED_HOSTS = ["www.strawberrystats.com", "tric-datasite.herokuapp.com", "127.0.0.1"]
 
 
 # Application definition

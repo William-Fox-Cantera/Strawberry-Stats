@@ -20,6 +20,7 @@ from io import BytesIO
 from .models import Customer
 from django.http import JsonResponse
 from .admin import generate_field_info_dict
+import boto3
 
 
 def get_area_form(request):
@@ -112,85 +113,63 @@ zip_upload, this function renders the user page for uploading a csv file into th
 def zip_upload(request, destination="start"):
     customer = request.user.customer
     files = [ k for k, v in customer.meta_list.items() ]
-    form = CustomerFileUploadForm(instance=customer, username=customer.name)
-    if destination == "start": # Just render the form if the start button is pressed
-        return render(request, "plants/user.html", {'form':form, 'should_generate':True, 
-                                                    'customer':customer, 'upload_names':files })
-    elif destination == "farmville":
-        meta = customer.meta_list
-        return render(request, "plants/farmville.html", {"meta":meta, 'upload_names':files, 'date_captured':"6/16/2020",
-                                                         "percent_flowered":"50%", "total_plants":"8"})
-    elif destination == "upload":
-        if request.method == 'POST':
-            upload_name = ""
-            form = CustomerFileUploadForm(request.POST, request.FILES, instance=customer, username=customer.name)
-            for filename, file in request.FILES.items(): # get the zip file name
-                upload_name = request.FILES[filename].name
-            if upload_name in customer.meta_list.keys(): # make sure the same file isn't being uploaded more than once
-                messages.error(request, "A file with this name has already been uploaded.")
-                return render(request, "plants/user.html", {'form':form, 'should_generate':True, 'customer':customer, 'upload_names':files})
-            if form.is_valid() and upload_name.endswith(".zip"):
-                messages.success(request, upload_name + " Successfully Uploaded")
-                upload = form.save()
-                user_upload = request.user.customer.file_upload
-                upload_images(request, upload_name)
-                files.append(upload_name)
-                return render(request, 'plants/user.html', { 'form':form, 'should_generate':True, 'date_captured':"6/16/2020",
-                                                             'customer':customer, 'upload_names':files })
-            else:
-                messages.error(request, "Please upload a file ending with \".zip\"")
-        else: # If not a post, make a blank form 
-            form = CustomerFileUploadForm()
+    print("Count: " + str(customer.dataset_count))
+    if destination == "farmville":
+        session = boto3.Session(
+                            aws_access_key_id='AKIA4C5UXLP3QWST6J55',
+                            aws_secret_access_key='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',
+                            region_name='us-east-1')        
+        s3 = session.resource('s3')
+        # get a handle on the bucket that holds your file
+        bucket = s3.Bucket('tric-static-bucket') # example: energy_market_procesing
+        # get a handle on the object you want (i.e. your file)
+        #try:
+        print("success")
+        obj = bucket.Object(key='media/%s/%s/plant_data.json' % (customer.name, "set-"+str(customer.dataset_count)))
+        i = 0
 
-        context = { 'form':form, 'should_generate':True, 'customer':customer,
+        # get the object
+        response = obj.get()
+        # read the contents of the file
+        lines = response['Body'].read()
+        meta = json.loads(lines)
+        # Providing the links to the images on s3
+        s3_starter = "https://tric-static-bucket.s3.us-east-2.amazonaws.com/media"
+        print(meta)
+        for entry in meta: 
+            set_string = "set-" + str(customer.dataset_count)
+            entry["image"] = "%s/%s/%s/%s.jpg" % (s3_starter, customer.name, set_string, str(i))
+            i += 1
+
+        customer.meta_list["set-" + str(customer.dataset_count)] = meta
+        print(customer.meta_list)
+        
+        if obj != None:
+            print("Incremented")
+            customer.dataset_count += 1
+        
+        customer.save()
+
+
+        
+        return render(request, "plants/farmville.html", {"meta":customer.meta_list, 'date_captured':"6/16/2020",
+                                                        "percent_flowered":"50%", "total_plants":"8", 'upload_names':files})
+        
+        '''
+        except: 
+            print('error')
+            context = {'should_generate':True, 'customer':customer,
+                        'total_plants':100, 'date_captured':"6/16/2020",
+                        'percent_flowered':"60%"}
+            return render(request, 'plants/user.html', context)
+        '''
+    
+
+    context = {'should_generate':True, 'customer':customer,
                     'total_plants':100, 'date_captured':"6/16/2020",
-                    'percent_flowered':"60%", 'upload_names':files}
-        return render(request, 'plants/user.html', context)
+                    'percent_flowered':"60%"}
+    return render(request, 'plants/user.html', context)
 
-
-"""
-upload_images, takes all of the images int he users uploaded zip file, uploads them the aws s3, then saves
-               the meta data from the images in a JSONField for the customer. The zip file is deleted after.
-
-:param upload_name: string, the filename of the zip file uploaded
-:param customer_name: string, the name of the customer doing the upload
-"""
-@login_required(login_url='login')
-@allowed_users(allowed_roles=['customer'])
-def upload_images(request, upload_name):
-    media_storage = PublicMediaStorage()
-    meta_list = []
-    customer = request.user.customer
-    with ZipFile(customer.file_upload, 'r') as zipfile:
-        zipfile.extractall()
-        i = 1
-        file_list = zipfile.namelist()
-        jpg_list = [name for name in file_list if name.endswith(".jpg")]
-        json_database = next(name for name in file_list if name.endswith(".json"))
-        for filename in jpg_list: 
-            try:
-                data = zipfile.read(str(i) + '.jpg')
-                dataEnc = BytesIO(data)
-                full_image_path = "%s/%s/%s" % (customer.name, "1-1-16", filename)
-                media_storage.save(full_image_path, dataEnc)
-                i += 1
-            except:
-                i += 1
-
-        json_read = zipfile.read(json_database)
-        json_data = json.loads(json_read) 
-        json_length = len(json_data)
-        j = 1
-        while True:
-            if j > json_length:
-                break
-            json_data[str(j)]["image"] = "%s/%s/%s" % (customer.name, "1-1-16", str(j) + ".jpg")
-            meta_list.append(json_data[str(j)])
-            j += 1
-        print(meta_list)
-        customer.meta_list[upload_name] = meta_list
-        customer.save() # add the list of dictionaries to the database
-        customer.file_upload.delete(save=False) # removes from postgresql, s3
 
 
 """
@@ -282,6 +261,15 @@ def home(request):
 
 
 def save_field_form(request):
+    '''
+    host = 'https://www.myqnapcloud.com'
+    user = 'will'
+    password = 'datacrew2020'
+    filestation = FileStation(host, user, password)
+    shares = filestation.list_share()
+    print(shares)
+    '''
+
     if request.method == 'POST':
         submitted_form = StaticFieldInfoForm(request.POST)
         if submitted_form.is_valid():

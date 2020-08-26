@@ -261,7 +261,7 @@
 </style>
 
 <p class="current-dataset" id="current-data">Current Dataset &#8594 </p>
-<a class="button" href="{% url 'zip_upload' 'start' %}" style="vertical-align:middle"><span>Back</span></a>
+<a class="button" href="{% url 'home' %}" style="vertical-align:middle"><span>Back</span></a>
 <div class="instruction-box card" style="width: 22rem; min-height: 50%; max-height: 50%;">
     <div class="card-body" style="width: 400px">
       <a href="#" onclick="changeText('previous')" class="tips">&#8249;</a> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
@@ -398,7 +398,6 @@ function switchTabs(event, tab) {
         }
 }
 
-
 /*
 * appendFavorites, adds to the inner html of the list of favorite iondices for easier viewing for the user.
 * Consumes: Nothing
@@ -458,22 +457,16 @@ function addFavoriteHTML(plantIndex, hasNoPlants, notes) {
     let newWidth = width/scaleReduce;
     let newHeight = height/scaleReduce;
     console.log("INDEX: " + plantIndex)
-    let imageHTML = "<img name='" + plantIndex + "' id='" + "image_" + plantIndex + "' src=\"https://tric-static-bucket.s3.us-east-2.amazonaws.com/media/" + 
-    meta_dict[plantIndex]['image'] + "\"" + " style=\"margin-bottom: -200px; width: " + newWidth + 'px' + "; height: " + newHeight 
-    + 'px' + "; border: 1px solid black;\">";
+    let imageHTML = "<img name='" + plantIndex + "' id='" + "image_" + plantIndex + "' src='" + meta_dict[plantIndex]['image'] + "' style=\"margin-bottom: -200px; width: " + newWidth + 'px' + "; height: " + newHeight + 'px' + "; border: 1px solid black;\">";
     favoritesDiv.innerHTML += imageHTML;   
 
     let plantNumHTML = "<p name='" + plantIndex + "' style=\"display: table-row; width: 400px; height 200px; font-family: arial;\
     font-size: 24px; transform: translate(770px, -240px);\">Plant Number: " + plantIndex + "</p>";
     favoritesDiv.innerHTML += plantNumHTML; 
 
-    let idHTML = "<p name='" + plantIndex + "' style=\"display: table-row; width: 400px; height 200px; font-family: arial;\
-    font-size: 24px; transform: translate(770px, -160px);\">Random ID: " + meta_dict[plantIndex]["plant_id"] + "</p>";
-    favoritesDiv.innerHTML += idHTML; 
-
     let coordsHTML = "<p name='" + plantIndex + "' style=\"display: table-row; width: 400px; height 200px; font-family: arial;\
     font-size: 16px; transform: translate(770px, -150px);\">Location: "
-    + meta_dict[plantIndex]["updated_gps_lat"] + ", " + meta_dict[plantIndex]["updated_gps_lon"] + "</p>";
+    + meta_dict[plantIndex]["updated_gps_coords"][1] + ", " + meta_dict[plantIndex]["updated_gps_coords"][0] + "</p>";
     favoritesDiv.innerHTML += coordsHTML; 
 
     let appendEnd = "</textarea></p>";
@@ -626,11 +619,11 @@ for (let i = 0; i < meta_dict.length; i++) {
             'properties': {
             'message': 'Hello',
             'iconSize': [60, 60],
-            'image': "https://tric-static-bucket.s3.us-east-2.amazonaws.com/media/" + meta_dict[i]['image']
+            'image': meta_dict[i]['image']
         },
         'geometry': {
             'type': 'Point',
-            'coordinates': [meta_dict[i]['updated_gps_lon'], meta_dict[i]['updated_gps_lat']]
+            'coordinates': [meta_dict[i]['updated_gps_coords'][1], meta_dict[i]['updated_gps_coords'][0]]
         }
     }
     geojson['features'].push(feature);
@@ -640,7 +633,7 @@ for (let i = 0; i < meta_dict.length; i++) {
 var map = new mapboxgl.Map({
 container: 'map',
     style: 'mapbox://styles/mapbox/streets-v11',
-    center: [meta_dict[0]['updated_gps_lon'], meta_dict[0]['updated_gps_lat']],
+    center: [meta_dict[0]['updated_gps_coords'][1], meta_dict[0]['updated_gps_coords'][0]],
     zoom: 15
 });
 

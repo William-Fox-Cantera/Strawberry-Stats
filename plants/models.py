@@ -34,6 +34,7 @@ class Customer(models.Model):
     permitted_fields = models.CharField(max_length=500, null=True)
     field_id = models.CharField(max_length=200, null=True, choices=(('---', '---'), ('---', '---')), default="---") 
     field_notes = models.CharField(max_length=500, null=True, blank=True)
+    dataset_count = models.IntegerField(default=0)
 
     def __str__(self):
         return self.name or ''
