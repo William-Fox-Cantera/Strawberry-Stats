@@ -118,28 +118,6 @@ def zip_upload(request, destination="start"):
         aws_secret_access_key='WMSM8hBwPSQBup+6d93ihFMlmux+D9HCWaswT4CF',
         region_name='us-east-1')        
 
-
-    if destination == "upload":
-        if request.method == "POST":
-            raw_upload_form = RawUploadForm(request.POST, request.FILES)
-            if raw_upload_form.is_valid():
-                media_storage = PublicMediaStorage()
-                for filename, file in request.FILES.items(): # get the zip file name
-                    upload = request.FILES[filename]
-
-
-                #media_storage.save('{0}/raw_data/{1}'.format(customer.name, upload.name), upload)
-
-                s3 = session.client('s3')
-                s3.upload_fileobj(upload, "tric-static-bucket", "media/asdf2/%s" % (upload.name))
-
-
-                messages.success(request, "Upload Successfull!")
-                return redirect("home")
-            else:
-                messages.info(request, "Please upload a file ending with \".zip\"")
-                return render(request, "plants/user.html", {"upload_form":raw_upload_form})
-
     if destination == "farmville":
         s3 = session.resource('s3')
         # get a handle on the bucket that holds your file
@@ -176,9 +154,9 @@ def zip_upload(request, destination="start"):
         
     
 
-    context = {'should_generate':True, 'customer':customer,
-                    'total_plants':100, 'date_captured':"6/16/2020",
-                    'percent_flowered':"60%", "upload_form":raw_upload_form}
+    context = {'should_generate':True, 'customer':customer, 'username':customer.name,
+               'total_plants':100, 'date_captured':"6/16/2020",
+               'percent_flowered':"60%", "upload_form":raw_upload_form}
     return render(request, 'plants/user.html', context)
 
 
@@ -276,7 +254,7 @@ def home(request):
             if upload.user_id != None:
                 print(User.objects.get(id=upload.user_id))
 
-        return render(request, "plants/user.html", {'upload_form':RawUploadForm()})
+        return render(request, "plants/user.html", {'username':request.user.customer.name, 'upload_form':RawUploadForm()})
 
 
 

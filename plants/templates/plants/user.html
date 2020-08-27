@@ -148,19 +148,18 @@
     }
 </style>
 <img id="upload-gif" src="https://tric-static-bucket.s3.us-east-2.amazonaws.com/static/images/uploading.gif" style="width: 200px; height: 200px; visibility: hidden; transform: translate(0%, 20%)">
-<div style="width: 50%; margin: 0 auto; transform: translate(0%, 20%)">
+<div style="width: 50%; margin: 0 auto; transform: translate(-5%, 20%)">
     <div class="row" style="float:left;">
         <div class="col">
             <div class="card card-body" style="height: 250px; background-color:rgb(226, 219, 219);">
                 <h5 class="card-title" style="font-family: arial;">Upload your file from the cart here</h5>
-                <form method="POST" id="submitform" action="{% url 'zip_upload' 'upload' %}" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    {{upload_form.as_p}}
-                    <button class="btn btn-primary" onclick="(showUploadGif())" type="submit">Upload</button>
-                    {% for message in messages %}
-                        <p id="messages" style="font-size: 22px; color:rgb(255, 251, 251); margin-top: 20px; background-color: grey; height: 80px; overflow-y: scroll;">{{message}}</p>
-                    {% endfor %}
-                </form>
+                <div>        
+                    <input type="file" id="fileUpload">    
+                    </div>    
+                    <div> 
+                    <button onclick="s3upload()" style="margin-top: 60px;">Submit</button>    
+                    </div>     
+                    <progress max="100" value="0" style="margin-top: 20px; height: 100px; width: 400px;"></progress>
             </div>
         </div>
     </div>
@@ -174,9 +173,53 @@
     </div>
 </div>
 
+
+<script src="https://sdk.amazonaws.com/js/aws-sdk-2.1.24.min.js"></script>
+<script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
 <script type="text/javascript">
-    function showUploadGif() {
-        document.getElementById("upload-gif").style.visibility = "visible";
-    }
+//Bucket Configurations
+var bucketName = "tric-static-bucket";
+var bucketRegion = "us-east-2";
+var IdentityPoolId = "us-east-2:977bff82-1adb-4705-9177-99b6bc103fae";
+
+AWS.config.update({
+    region: bucketRegion,
+    credentials: new AWS.CognitoIdentityCredentials({
+        IdentityPoolId: IdentityPoolId
+    })
+});
+
+var s3 = new AWS.S3({
+    apiVersion: '2006-03-01',
+    params: {Bucket: bucketName}
+});
 </script>
+
+<script type="text/javascript">
+    console.log("{{username}}")
+    function s3upload() {
+       var files = document.getElementById('fileUpload').files;
+       if (files) {
+         var file = files[0];
+         var fileName = file.name;
+         var filePath = "media/" + "{{username}}" + "/raw_data/" + fileName;
+         s3.upload({
+            Key: filePath,
+            ContentType: file.type,
+            Body: file,
+            ACL: 'public-read'
+            }, function(err, data) {
+            if(err) {
+                console.log(err);
+            }
+            alert('Successfully Uploaded!');
+            }).on('httpUploadProgress', function (progress) {
+                var uploaded = parseInt((progress.loaded * 100) / progress.total);
+                $("progress").attr('value', uploaded);
+          });
+       }
+    };
+</script>
+
+
 {% endblock content %}
