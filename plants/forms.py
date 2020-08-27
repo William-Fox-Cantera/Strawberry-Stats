@@ -8,8 +8,7 @@ from .models import *
 class CustomerForm(ModelForm):
     class Meta:
         model = Customer
-        fields = '__all__'
-        exclude = ['user', 'file_upload', 'meta_list']
+        fields = ['name', 'phone', 'email', 'profile_pic']
 
 
 """
@@ -18,7 +17,7 @@ CLASS - CustomerFileUploadForm, form class just for handling file uploads.
 class CustomerFileUploadForm(ModelForm):
     class Meta:
         model = Customer
-        fields = ['field_id', 'file_upload']
+        fields = ['field_id']
 
     def __init__(self, *args, **kwargs):
         username = kwargs.pop('username')
@@ -44,6 +43,11 @@ class CreateUserForm(UserCreationForm):
         model = User
         fields = ['username', 'email', 'password1', 'password2']
 
+
+class RawUploadForm(ModelForm):
+    class Meta:
+        model = RawUpload
+        fields = ['file_upload']
 
 class StaticFieldInfoForm(ModelForm):
     class Meta:

@@ -2,9 +2,8 @@ from django.db import models
 from django import forms
 from django.contrib.auth.models import User
 from plants.storage_backends import PublicMediaStorage, PrivateMediaStorage
-from .helpers import get_path, get_profile_pic_path
+from .helpers import get_raw_upload_path, get_profile_pic_path
 from django.contrib.postgres.fields import JSONField
-import datetime
 
 # Create your models here.
 
@@ -23,13 +22,8 @@ class Customer(models.Model):
                                     null=True, 
                                     blank=True)
     date_created = models.DateTimeField(auto_now_add=True, null=True)
-    file_upload = models.FileField(upload_to=get_path, 
-                                        storage=PrivateMediaStorage(), 
-                                        null=True, 
-                                        blank=True)
     meta_list = JSONField(null=True, default=dict)
     area_info_forms = JSONField(null=True, default=dict)
-    date_collected = models.DateField(default=datetime.date.today)
     
     permitted_fields = models.CharField(max_length=500, null=True)
     field_id = models.CharField(max_length=200, null=True, choices=(('---', '---'), ('---', '---')), default="---") 
@@ -40,14 +34,16 @@ class Customer(models.Model):
         return self.name or ''
 
 
+class RawUpload(models.Model):
+    user = models.OneToOneField(User, null=True, blank=True, on_delete=models.CASCADE)
+    file_upload = models.FileField(upload_to=get_raw_upload_path, storage=PublicMediaStorage(), null=True, blank=True)
+
+
+
 class StaticFieldInfo(models.Model):
     user = models.OneToOneField(User, null=True, blank=True, on_delete=models.CASCADE)
     field_id = models.IntegerField()
     datum_latitude = models.CharField(max_length=200)
     datum_longitude = models.CharField(max_length=200)
-
-
-
-
 
 

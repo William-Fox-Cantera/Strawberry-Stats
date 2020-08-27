@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.forms import inlineformset_factory
 from .models import *
-from .forms import CreateUserForm, CustomerForm, CustomerFileUploadForm, StaticFieldInfoForm
+from .forms import CreateUserForm, CustomerForm, CustomerFileUploadForm, RawUploadForm, StaticFieldInfoForm
 from .decorators import unauthenticated_user, allowed_users, admin_only
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import authenticate, login, logout
@@ -16,7 +16,6 @@ import json
 import piexif
 import piexif.helper
 from zipfile import ZipFile
-from io import BytesIO
 from .models import Customer
 from django.http import JsonResponse
 from .admin import generate_field_info_dict
@@ -113,21 +112,42 @@ zip_upload, this function renders the user page for uploading a csv file into th
 def zip_upload(request, destination="start"):
     customer = request.user.customer
     files = [ k for k, v in customer.meta_list.items() ]
-    print("Count: " + str(customer.dataset_count))
+    raw_upload_form = RawUploadForm()
+    session = boto3.Session(
+        aws_access_key_id='AKIA4C5UXLP3QWST6J55',
+        aws_secret_access_key='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',
+        region_name='us-east-1')        
+
+
+    if destination == "upload":
+        if request.method == "POST":
+            raw_upload_form = RawUploadForm(request.POST, request.FILES)
+            if raw_upload_form.is_valid():
+                media_storage = PublicMediaStorage()
+                for filename, file in request.FILES.items(): # get the zip file name
+                    upload = request.FILES[filename]
+
+
+                #media_storage.save('{0}/raw_data/{1}'.format(customer.name, upload.name), upload)
+
+                s3 = session.client('s3')
+                s3.upload_fileobj(upload, "tric-static-bucket", "media/asdf2/%s" % (upload.name))
+
+
+                messages.success(request, "Upload Successfull!")
+                return redirect("home")
+            else:
+                messages.info(request, "Please upload a file ending with \".zip\"")
+                return render(request, "plants/user.html", {"upload_form":raw_upload_form})
+
     if destination == "farmville":
-        session = boto3.Session(
-                            aws_access_key_id='AKIA4C5UXLP3QWST6J55',
-                            aws_secret_access_key='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',
-                            region_name='us-east-1')        
         s3 = session.resource('s3')
         # get a handle on the bucket that holds your file
         bucket = s3.Bucket('tric-static-bucket') # example: energy_market_procesing
         # get a handle on the object you want (i.e. your file)
         try:
-            print("success")
             obj = bucket.Object(key='media/%s/%s/plant_data.json' % (customer.name, "set-"+str(customer.dataset_count)))
             i = 0
-
             # get the object
             response = obj.get()
             # read the contents of the file
@@ -135,29 +155,20 @@ def zip_upload(request, destination="start"):
             meta = json.loads(lines)
             # Providing the links to the images on s3
             s3_starter = "https://tric-static-bucket.s3.us-east-2.amazonaws.com/media"
-            print(meta)
             for entry in meta: 
                 set_string = "set-" + str(customer.dataset_count)
                 entry["image"] = "%s/%s/%s/%s.jpg" % (s3_starter, customer.name, set_string, str(i))
                 i += 1
 
             customer.meta_list["set-" + str(customer.dataset_count)] = meta
-            print(customer.meta_list)
             
             if obj != None:
-                print("Incremented")
                 customer.dataset_count += 1
             
             customer.save()
-
-
-            
             return render(request, "plants/farmville.html", {"meta":customer.meta_list, 'date_captured':"6/16/2020",
                                                             "percent_flowered":"50%", "total_plants":"8", 'upload_names':files})
-        
-        
         except: 
-            print('error')
             context = {'should_generate':True, 'customer':customer,
                         'total_plants':100, 'date_captured':"6/16/2020",
                         'percent_flowered':"60%", 'upload_names':files}
@@ -167,7 +178,7 @@ def zip_upload(request, destination="start"):
 
     context = {'should_generate':True, 'customer':customer,
                     'total_plants':100, 'date_captured':"6/16/2020",
-                    'percent_flowered':"60%"}
+                    'percent_flowered':"60%", "upload_form":raw_upload_form}
     return render(request, 'plants/user.html', context)
 
 
@@ -253,23 +264,23 @@ def home(request):
             usernames.append(user.name)
         fields_dict = generate_field_info_dict()
 
-        context = {'field_form':form, 'fields':StaticFieldInfo.objects.all(), 'usernames':usernames, 'fields_dict':fields_dict}
+        filename = User.objects.get(id=12) 
+        print(filename)
+        upload = RawUpload.objects.get(id=4)
+        context = {'field_form':form, 'fields':StaticFieldInfo.objects.all(), 
+                   'usernames':usernames, 'fields_dict':fields_dict, 'raw_upload':upload}
         return render(request, "plants/admin_input.html", context)
     else:
-        return render(request, "plants/user.html")
+        for upload in RawUpload.objects.all():
+            print(upload.user_id)
+            if upload.user_id != None:
+                print(User.objects.get(id=upload.user_id))
+
+        return render(request, "plants/user.html", {'upload_form':RawUploadForm()})
 
 
 
 def save_field_form(request):
-    '''
-    host = 'https://www.myqnapcloud.com'
-    user = 'will'
-    password = 'datacrew2020'
-    filestation = FileStation(host, user, password)
-    shares = filestation.list_share()
-    print(shares)
-    '''
-
     if request.method == 'POST':
         submitted_form = StaticFieldInfoForm(request.POST)
         if submitted_form.is_valid():

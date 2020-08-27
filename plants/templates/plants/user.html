@@ -119,7 +119,7 @@
         position: none;
         display: inline-block !important; 
         margin-left: 20px;
-        margin-bottom: 20px;;
+        margin-bottom: 20px;
         width: 46%;
     }
 
@@ -147,39 +147,36 @@
         transform: translate(0px, 10%);
     }
 </style>
-
-<p class="instructions">Follow the link below and sign into your Qnap account to upload your file. Click start once you recieve your data back from us</p>
-<a style="color: rgb(134, 134, 243); margin-left: 720px; font-family: arial; font-size: 24px;" href="https://myqnapcloud.com/u#/my_device/no_device?r=1597791355418">Click to redirect to our cloud based file storage</a>
-
-<div style="transform:translate(40%, 30%);">
-    <p>Operator Name: <input id="operator_name"></p>
-    <p>Camera Height(Meters): <input id="camera_height"></p>
-    <p>Rotational Offset(Degrees): <input id="rotational_offset"></p>
-    <p>Camera Fov X(Meters): <input id="cam_fov_x"></p>
-    <p>Camera Fov Y(Meters): <input id="cam_fov_y"></p>
-    <p>Notes: <input id="notes"></p>
-    <a id="json_download" onclick=JsonDownload() class="btn btn-warning">Download</a>
+<img id="upload-gif" src="https://tric-static-bucket.s3.us-east-2.amazonaws.com/static/images/uploading.gif" style="width: 200px; height: 200px; visibility: hidden; transform: translate(0%, 20%)">
+<div style="width: 50%; margin: 0 auto; transform: translate(0%, 20%)">
+    <div class="row" style="float:left;">
+        <div class="col">
+            <div class="card card-body" style="height: 250px; background-color:rgb(226, 219, 219);">
+                <h5 class="card-title" style="font-family: arial;">Upload your file from the cart here</h5>
+                <form method="POST" id="submitform" action="{% url 'zip_upload' 'upload' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{upload_form.as_p}}
+                    <button class="btn btn-primary" onclick="(showUploadGif())" type="submit">Upload</button>
+                    {% for message in messages %}
+                        <p id="messages" style="font-size: 22px; color:rgb(255, 251, 251); margin-top: 20px; background-color: grey; height: 80px; overflow-y: scroll;">{{message}}</p>
+                    {% endfor %}
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="row" style="float:inline-end;">
+        <div class="col">
+            <div class="card card-body" style="height: 250px; background-color:rgb(226, 219, 219);">
+                <h5 class="card-title" style="font-family: arial;">It will take us some time to process your data, when it is ready you can view it in the next page</h5>
+                <a class="button" href="{% url 'zip_upload' 'farmville' %}"><span>View</span></a>
+            </div>
+        </div>
+    </div>
 </div>
-<a class="button" href="{% url 'zip_upload' 'farmville' %}" style="transform:translate(-100px, 200px); vertical-align:middle"><span>View</span></a>
-
 
 <script type="text/javascript">
-    function JsonDownload() {
-        var operator_name = document.getElementById("operator_name").value;
-        var camera_height = document.getElementById("camera_height").value;
-        var rotational_offset = document.getElementById("rotational_offset").value;
-        var cam_fov_x = document.getElementById("cam_fov_x").value;
-        var cam_fov_y = document.getElementById("cam_fov_y").value;
-        var notes = document.getElementById("notes").value;
-		var storageObj = {'operator_name':operator_name, "camera_height(meters)":camera_height,
-                          'rotational_offset(degrees)':rotational_offset, "notes":notes,
-                          'cam_fov_x':cam_fov_x, 'cam_fov_y':cam_fov_y};
-		var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(storageObj));
-		var dlAnchorElem = document.getElementById("json_download");
-		dlAnchorElem.setAttribute("href",     dataStr     );
-		dlAnchorElem.setAttribute("download", "collection_info.json");
-	}
-
+    function showUploadGif() {
+        document.getElementById("upload-gif").style.visibility = "visible";
+    }
 </script>
-
 {% endblock content %}
