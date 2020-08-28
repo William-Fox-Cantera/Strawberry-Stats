@@ -148,23 +148,21 @@
     }
 </style>
 <img id="upload-gif" src="https://tric-static-bucket.s3.us-east-2.amazonaws.com/static/images/uploading.gif" style="width: 200px; height: 200px; visibility: hidden; transform: translate(0%, 20%)">
-<div style="width: 50%; margin: 0 auto; transform: translate(-5%, 20%)">
-    <div class="row" style="float:left;">
-        <div class="col">
+
+
+
+
+<div class="container-fluid" style="margin-left: 17%;">
+    <div class="row">
+        <div class="col-lg-4">
             <div class="card card-body" style="height: 250px; background-color:rgb(226, 219, 219);">
                 <h5 class="card-title" style="font-family: arial;">Upload your file from the cart here</h5>
-                <div>        
-                    <input type="file" id="fileUpload">    
-                    </div>    
-                    <div> 
-                    <button onclick="s3upload()" style="margin-top: 60px;">Submit</button>    
-                    </div>     
-                    <progress max="100" value="0" style="margin-top: 20px; height: 100px; width: 400px;"></progress>
+                <input type="file" id="fileUpload">    
+                <button onclick="s3upload()" style="width: 200px; margin-top: 60px;">Submit</button>    
+                <progress max="100" value="0" style="margin-top: 20px; height: 100px; width: 400px;"></progress>
             </div>
         </div>
-    </div>
-    <div class="row" style="float:inline-end;">
-        <div class="col">
+        <div class="col-lg-4">
             <div class="card card-body" style="height: 250px; background-color:rgb(226, 219, 219);">
                 <h5 class="card-title" style="font-family: arial;">It will take us some time to process your data, when it is ready you can view it in the next page</h5>
                 <a class="button" href="{% url 'zip_upload' 'farmville' %}"><span>View</span></a>
@@ -172,6 +170,9 @@
         </div>
     </div>
 </div>
+
+
+
 
 
 <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1.24.min.js"></script>

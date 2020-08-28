@@ -45,5 +45,6 @@ class StaticFieldInfo(models.Model):
     field_id = models.IntegerField()
     datum_latitude = models.CharField(max_length=200)
     datum_longitude = models.CharField(max_length=200)
+    meters_per_pixel = models.IntegerField(default=0)
 
 

@@ -154,7 +154,7 @@ def zip_upload(request, destination="start"):
         
     
 
-    context = {'should_generate':True, 'customer':customer, 'username':customer.name,
+    context = {'should_generate':True, 'customer':customer, 'username':request.user,
                'total_plants':100, 'date_captured':"6/16/2020",
                'percent_flowered':"60%", "upload_form":raw_upload_form}
     return render(request, 'plants/user.html', context)
@@ -254,7 +254,7 @@ def home(request):
             if upload.user_id != None:
                 print(User.objects.get(id=upload.user_id))
 
-        return render(request, "plants/user.html", {'username':request.user.customer.name, 'upload_form':RawUploadForm()})
+        return render(request, "plants/user.html", {'username':request.user, 'upload_form':RawUploadForm()})
 
 
 

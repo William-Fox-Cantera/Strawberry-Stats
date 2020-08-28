@@ -8,8 +8,7 @@
 <div class="row">
 	<div class="col-md">
 		<div class="card card-body">
-			<h5>Customer:</h5>
-			<hr>
+
 
 		</div>
 	</div>
@@ -17,7 +16,6 @@
 	<div class="col-md">
 		<div class="card card-body">
 
-			<a href="{{raw_upload.url}}">{{raw_upload}}</a>
 		</div>
 	</div>
 
@@ -31,17 +29,18 @@
 <br>
 <div class="row">
 	<div class="col">
-		<div class="card card-body">
+		<div class="card card-body" style="min-height: 450px;">
+			<h2 class="card-title" style="font-family: arial;">Add a New Field</h2>
 			<form method="POST" id="submitform" action="{% url 'save_field_form' %}" enctype="multipart/form-data">
 				{% csrf_token %}
 				{{field_form.as_p}}
-				<button class="btn btn-primary" type="submit">Submit</button>
+				<button class="btn btn-primary" type="submit">Make Field</button>
 		  </form>
 		</div>
 	</div>
 	<div class="col">
-		<div class="card card-body" style="height: 450px; overflow-y: scroll;">
-			<p>Current Fields Saved</p>
+		<div class="card card-body" style="min-height: 450px; overflow-y: scroll;">
+			<h2 class="card-title" style="font-family: arial;">Current Fields</h2>
 				{% for field in fields %}
 					<p>{{ field.field_id }} &nbsp; &nbsp; &nbsp;<select id="{{field.field_id}}_select">
 						{% for username in usernames %}
